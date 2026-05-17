@@ -131,6 +131,14 @@ export const WorkspaceProvider = ({
       ? query.workspaceId?.toString()
       : undefined;
 
+    if (pathWorkspaceId && !workspaces.find(byId(pathWorkspaceId))) {
+      const fallbackWorkspaceId = workspaces[0].id;
+      setWorkspaceIdInLocalStorage(fallbackWorkspaceId);
+      setWorkspaceId(fallbackWorkspaceId);
+      replace(`/w/${fallbackWorkspaceId}/typebots`);
+      return;
+    }
+
     if (workspaceId) {
       const currentWorkspace = workspaces.find(byId(workspaceId));
       // Workspace was just deleted

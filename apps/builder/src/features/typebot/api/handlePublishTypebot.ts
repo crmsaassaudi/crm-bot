@@ -46,7 +46,7 @@ export const handlePublishTypebot = async ({
   context: { user },
 }: {
   input: z.infer<typeof publishTypebotInputSchema>;
-  context: { user: Pick<User, "id"> };
+  context: { user: Pick<User, "id" | "email"> };
 }) => {
   const warnings: Warning[] = [];
 
@@ -59,6 +59,7 @@ export const handlePublishTypebot = async ({
       publishedTypebot: true,
       workspace: {
         select: {
+          id: true,
           plan: true,
           isVerified: true,
           isSuspended: true,

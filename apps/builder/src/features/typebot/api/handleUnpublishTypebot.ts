@@ -17,7 +17,7 @@ export const handleUnpublishTypebot = async ({
   context: { user },
 }: {
   input: z.infer<typeof unpublishTypebotInputSchema>;
-  context: { user: Pick<User, "id"> };
+  context: { user: Pick<User, "id" | "email"> };
 }) => {
   const existingTypebot = await prisma.typebot.findFirst({
     where: {
@@ -28,6 +28,7 @@ export const handleUnpublishTypebot = async ({
       publishedTypebot: true,
       workspace: {
         select: {
+          id: true,
           isSuspended: true,
           isPastDue: true,
           members: {

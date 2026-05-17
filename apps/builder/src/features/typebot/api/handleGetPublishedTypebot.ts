@@ -38,6 +38,7 @@ export const handleGetPublishedTypebot = async ({
       publishedTypebot: true,
       workspace: {
         select: {
+          id: true,
           isSuspended: true,
           isPastDue: true,
           members: {

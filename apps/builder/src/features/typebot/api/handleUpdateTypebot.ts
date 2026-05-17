@@ -65,7 +65,7 @@ export const handleUpdateTypebot = async ({
   context: { user },
 }: {
   input: z.infer<typeof updateTypebotInputSchema>;
-  context: { user: Pick<User, "id"> };
+  context: { user: Pick<User, "id" | "email"> };
 }) => {
   const existingTypebot = await prisma.typebot.findFirst({
     where: {

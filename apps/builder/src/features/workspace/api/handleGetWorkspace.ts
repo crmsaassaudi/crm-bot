@@ -2,6 +2,7 @@ import { ORPCError } from "@orpc/server";
 import { datesAreOnSameDay } from "@typebot.io/lib/datesAreOnSameDay";
 import prisma from "@typebot.io/prisma";
 import type { User } from "@typebot.io/user/schemas";
+import { isCrmOwnerWorkspaceForbidden } from "@typebot.io/workspaces/crmTenantWorkspaceMapping";
 import { workspaceSchema } from "@typebot.io/workspaces/schemas";
 import { z } from "zod";
 import { getUserModeInWorkspace } from "../helpers/getUserRoleInWorkspace";
@@ -39,7 +40,17 @@ export const handleGetWorkspace = async ({
   });
 
   if (
-    !workspace?.lastActivityAt ||
+    !workspace ||
+    (await isCrmOwnerWorkspaceForbidden({
+      ownerEmail: user.email,
+      workspaceId,
+    })) ||
+    isReadWorkspaceFobidden(workspace, user)
+  )
+    throw new ORPCError("NOT_FOUND", { message: "Workspace not found" });
+
+  if (
+    !workspace.lastActivityAt ||
     !datesAreOnSameDay(workspace.lastActivityAt, new Date())
   ) {
     await prisma.workspace.updateMany({
@@ -51,9 +62,6 @@ export const handleGetWorkspace = async ({
       },
     });
   }
-
-  if (!workspace || isReadWorkspaceFobidden(workspace, user))
-    throw new ORPCError("NOT_FOUND", { message: "Workspace not found" });
 
   const currentUserMode = getUserModeInWorkspace(user.id, workspace.members);
 

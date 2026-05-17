@@ -113,6 +113,19 @@ model Workspace {
   inactiveFirstEmailSentAt      DateTime?
   inactiveSecondEmailSentAt     DateTime?
   spaces                        Space[]
+  crmTenantMapping              CrmTenantWorkspaceMapping?
+}
+
+model CrmTenantWorkspaceMapping {
+  id          String    @id
+  tenantId    String    @unique
+  workspaceId String    @unique
+  ownerEmail  String
+  createdAt   DateTime
+  updatedAt   DateTime
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([ownerEmail])
 }
 
 model Space {

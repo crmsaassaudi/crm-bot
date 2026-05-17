@@ -51,12 +51,13 @@ export const createAuthPrismaAdapter = (p: Prisma.PrismaClient): Adapter => ({
       name: data.name ? `${data.name}'s workspace` : "My workspace",
       plan: parseWorkspaceDefaultPlan(data.email),
     };
+    const shouldCreateDefaultWorkspace = !env.CRM_BOT_SSO_LOCKDOWN;
     const createdUser = await p.user.create({
       data: {
         ...data,
         id: user.id,
         workspaces:
-          workspaceInvitations.length > 0
+          !shouldCreateDefaultWorkspace || workspaceInvitations.length > 0
             ? undefined
             : {
                 create: {

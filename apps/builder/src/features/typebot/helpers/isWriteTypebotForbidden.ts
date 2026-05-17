@@ -1,17 +1,32 @@
 import { CollaborationType } from "@typebot.io/prisma/enum";
 import type { Prisma } from "@typebot.io/prisma/types";
+import {
+  isCrmOwnerWorkspaceForbidden,
+  isCrmSsoLockdownEnabled,
+} from "@typebot.io/workspaces/crmTenantWorkspaceMapping";
 
 export const isWriteTypebotForbidden = async (
   typebot: {
+    workspaceId?: string;
     collaborators: Pick<Prisma.CollaboratorsOnTypebots, "userId" | "type">[];
   } & {
     workspace: Pick<Prisma.Workspace, "isSuspended" | "isPastDue"> & {
+      id?: string;
       members: Pick<Prisma.MemberInWorkspace, "userId" | "role">[];
     };
   },
-  user: Pick<Prisma.User, "id">,
+  user: Pick<Prisma.User, "id" | "email">,
 ) => {
+  const workspaceId = typebot.workspace.id ?? typebot.workspaceId;
+
   return (
+    (isCrmSsoLockdownEnabled() && !workspaceId) ||
+    (workspaceId
+      ? await isCrmOwnerWorkspaceForbidden({
+          ownerEmail: user.email,
+          workspaceId,
+        })
+      : false) ||
     typebot.workspace.isSuspended ||
     typebot.workspace.isPastDue ||
     (!typebot.collaborators.some(

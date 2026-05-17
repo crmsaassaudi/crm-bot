@@ -85,6 +85,8 @@ const baseEnv = {
       )
       .default("FREE"),
     TYPEBOT_DEBUG: boolean.optional().default(false),
+    CRM_BOT_SSO_LOCKDOWN: boolean.optional().default(false),
+    CRM_BOT_INTERNAL_SECRET: z.string().min(1).optional(),
     SSRF_ALLOWED_HOSTS: z
       .string()
       .min(1)
@@ -456,6 +458,7 @@ const keycloakEnv = {
   server: {
     KEYCLOAK_CLIENT_ID: z.string().min(1).optional(),
     KEYCLOAK_CLIENT_SECRET: z.string().min(1).optional(),
+    KEYCLOAK_ISSUER: z.string().url().optional(),
     KEYCLOAK_REALM: z.string().min(1).optional(),
     KEYCLOAK_BASE_URL: z.string().url().optional(),
   },

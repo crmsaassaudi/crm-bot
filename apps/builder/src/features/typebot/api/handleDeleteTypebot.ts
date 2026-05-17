@@ -21,7 +21,7 @@ export const handleDeleteTypebot = async ({
   context: { user },
 }: {
   input: z.infer<typeof deleteTypebotInputSchema>;
-  context: { user: Pick<User, "id"> };
+  context: { user: Pick<User, "id" | "email"> };
 }) => {
   const existingTypebot = await prisma.typebot.findFirst({
     where: {

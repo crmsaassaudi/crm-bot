@@ -11,6 +11,14 @@ import type { TypebotCookieValue } from "@typebot.io/telemetry/cookies/schema";
 import { mergeIds } from "@typebot.io/telemetry/mergeIds";
 import { trackEvents } from "@typebot.io/telemetry/trackEvents";
 import { clientUserSchema } from "@typebot.io/user/schemas";
+import {
+  ensureCrmOwnerWorkspaceMembership,
+  getCrmWorkspaceMappingByTenantId,
+  getCrmWorkspaceMappingForOwnerEmail,
+  normalizeCrmOwnerEmail,
+  pruneCrmOwnerWorkspaceMemberships,
+  touchCrmWorkspaceMapping,
+} from "@typebot.io/workspaces/crmTenantWorkspaceMapping";
 import type { NextRequest } from "next/server";
 import NextAuth, { type NextAuthResult } from "next-auth";
 import { accountHasRequiredOAuthGroups } from "../helpers/accountHasRequiredOAuthGroups";
@@ -80,12 +88,43 @@ const nextAuth = NextAuth((req) => ({
     },
   },
   callbacks: {
-    session: async ({ session, user }) => ({
-      ...session,
-      user: clientUserSchema.parse(user),
-    }),
-    signIn: async ({ account, user, email }) => {
+    session: async ({ session, user }) => {
+      const parsedUser = clientUserSchema.parse(user);
+
+      if (!env.CRM_BOT_SSO_LOCKDOWN)
+        return {
+          ...session,
+          user: parsedUser,
+        };
+
+      const mapping = await getCrmWorkspaceMappingForOwnerEmail(
+        parsedUser.email,
+      );
+      if (mapping)
+        await ensureCrmOwnerWorkspaceMembership({
+          ownerEmail: parsedUser.email,
+          workspaceId: mapping.workspaceId,
+        });
+
+      return {
+        ...session,
+        user: {
+          ...parsedUser,
+          crmTenantId: mapping?.tenantId,
+          crmWorkspaceId: mapping?.workspaceId,
+        },
+      };
+    },
+    signIn: async ({ account, user, email, profile }) => {
       if (!account) return false;
+      if (env.CRM_BOT_SSO_LOCKDOWN) {
+        if (account.provider !== "keycloak") return false;
+        await assertCrmOwnerKeycloakSignIn({
+          ownerEmail: user.email,
+          idToken: account.id_token,
+          profile,
+        });
+      }
       const isNewUser = !("createdAt" in user && isDefined(user.createdAt));
       if (user.email && email?.verificationRequest) {
         const ip = req
@@ -115,6 +154,60 @@ const nextAuth = NextAuth((req) => ({
     },
   },
 }));
+
+const assertCrmOwnerKeycloakSignIn = async ({
+  ownerEmail,
+  idToken,
+  profile,
+}: {
+  ownerEmail?: string | null;
+  idToken?: string | null;
+  profile?: unknown;
+}) => {
+  if (!ownerEmail) throw new Error("crm-owner-email-missing");
+
+  const tenantId =
+    getTenantIdFromClaims(profile) ?? getTenantIdFromJwt(idToken);
+  if (!tenantId) throw new Error("crm-tenant-id-missing");
+
+  const mapping = await getCrmWorkspaceMappingByTenantId(tenantId);
+  if (!mapping) throw new Error("crm-workspace-not-provisioned");
+
+  const normalizedEmail = normalizeCrmOwnerEmail(ownerEmail);
+  if (mapping.ownerEmail !== normalizedEmail)
+    throw new Error("crm-workspace-owner-only");
+
+  await touchCrmWorkspaceMapping(mapping.tenantId);
+  await pruneCrmOwnerWorkspaceMemberships({
+    ownerEmail: normalizedEmail,
+    workspaceId: mapping.workspaceId,
+  });
+};
+
+const getTenantIdFromClaims = (claimsLike: unknown) => {
+  if (!claimsLike || typeof claimsLike !== "object") return;
+
+  const claims = claimsLike as Record<string, unknown>;
+  const tenantId = claims.tenantId ?? claims.tenant_id;
+
+  return typeof tenantId === "string" && tenantId.trim().length > 0
+    ? tenantId.trim()
+    : undefined;
+};
+
+const getTenantIdFromJwt = (idToken?: string | null) => {
+  if (!idToken) return;
+
+  try {
+    const [, payload] = idToken.split(".");
+    if (!payload) return;
+    return getTenantIdFromClaims(
+      JSON.parse(Buffer.from(payload, "base64url").toString("utf8")),
+    );
+  } catch {
+    return;
+  }
+};
 
 const updateCookieIsMerged = ({
   req,

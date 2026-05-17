@@ -2,6 +2,7 @@ import { ORPCError } from "@orpc/server";
 import prisma from "@typebot.io/prisma";
 import { getTypebotAccessRight } from "@typebot.io/typebot/helpers/getTypebotAccessRight";
 import type { User } from "@typebot.io/user/schemas";
+import { isCrmOwnerWorkspaceForbidden } from "@typebot.io/workspaces/crmTenantWorkspaceMapping";
 import { z } from "zod";
 import { getUserModeInWorkspace } from "@/features/workspace/helpers/getUserRoleInWorkspace";
 
@@ -21,6 +22,14 @@ export const handleListTypebots = async ({
   input: z.infer<typeof listTypebotsInputSchema>;
   context: { user: Pick<User, "id" | "email"> };
 }) => {
+  if (
+    await isCrmOwnerWorkspaceForbidden({
+      ownerEmail: user.email,
+      workspaceId,
+    })
+  )
+    throw new ORPCError("NOT_FOUND", { message: "Workspace not found" });
+
   const workspace = await prisma.workspace.findUnique({
     where: { id: workspaceId },
     select: {

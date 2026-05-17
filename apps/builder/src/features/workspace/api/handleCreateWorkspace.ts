@@ -1,4 +1,5 @@
 import { ORPCError } from "@orpc/server";
+import { env } from "@typebot.io/env";
 import prisma from "@typebot.io/prisma";
 import { trackEvents } from "@typebot.io/telemetry/trackEvents";
 import type { User } from "@typebot.io/user/schemas";
@@ -21,6 +22,11 @@ export const handleCreateWorkspace = async ({
   input: z.infer<typeof createWorkspaceInputSchema>;
   context: { user: Pick<User, "id" | "email"> };
 }) => {
+  if (env.CRM_BOT_SSO_LOCKDOWN)
+    throw new ORPCError("FORBIDDEN", {
+      message: "Workspace creation is managed by CRM onboarding",
+    });
+
   const plan = parseWorkspaceDefaultPlan(user.email);
 
   if (plan === "FREE") await enforceFreeTierLimits(user.id);

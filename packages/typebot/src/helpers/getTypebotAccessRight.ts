@@ -19,6 +19,11 @@ export const getTypebotAccessRight = (
     return "write";
 
   if (collaborator) return "read";
-  if (user?.email && env.ADMIN_EMAIL?.includes(user.email)) return "read";
+  if (
+    !env.CRM_BOT_SSO_LOCKDOWN &&
+    user?.email &&
+    env.ADMIN_EMAIL?.includes(user.email)
+  )
+    return "read";
   return "guest";
 };

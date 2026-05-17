@@ -42,6 +42,7 @@ export const handleGetTypebot = async ({
       collaborators: true,
       workspace: {
         select: {
+          id: true,
           isSuspended: true,
           isPastDue: true,
           members: {

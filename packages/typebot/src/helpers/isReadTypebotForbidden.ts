@@ -1,14 +1,17 @@
 import { env } from "@typebot.io/env";
 import type { Prisma } from "@typebot.io/prisma/types";
 import { settingsSchema } from "@typebot.io/settings/schemas";
+import { isCrmOwnerWorkspaceForbidden } from "@typebot.io/workspaces/crmTenantWorkspaceMapping";
 import type { Workspace } from "@typebot.io/workspaces/schemas";
 
 export const isReadTypebotForbidden = async (
   typebot: {
+    workspaceId?: string;
     settings?: Prisma.Typebot["settings"];
     collaborators: Pick<Prisma.CollaboratorsOnTypebots, "userId">[];
   } & {
     workspace: Pick<Workspace, "isSuspended" | "isPastDue"> & {
+      id?: string;
       members: Pick<Prisma.MemberInWorkspace, "userId">[];
     };
   },
@@ -20,7 +23,19 @@ export const isReadTypebotForbidden = async (
   const isTypebotPublic = settings?.publicShare?.isEnabled === true;
   if (isTypebotPublic) return false;
   if (!user) return true;
-  if ((env.ADMIN_EMAIL ?? []).some((email) => email === user.email))
+  const workspaceId = typebot.workspace.id ?? typebot.workspaceId;
+  if (env.CRM_BOT_SSO_LOCKDOWN && !workspaceId) return true;
+  if (
+    await isCrmOwnerWorkspaceForbidden({
+      ownerEmail: user.email,
+      workspaceId: workspaceId as string,
+    })
+  )
+    return true;
+  if (
+    !env.CRM_BOT_SSO_LOCKDOWN &&
+    (env.ADMIN_EMAIL ?? []).some((email) => email === user.email)
+  )
     return false;
   return (
     typebot.workspace.isSuspended ||
