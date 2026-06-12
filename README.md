@@ -1,108 +1,88 @@
-<br />
-<p align="center">
-<a href="https://typebot.io" target="_blank">
-  <img src="./.github/images/banner.png" alt="Typebot banner">
-</a>
-</p>
-<br />
+# crm-bot — Visual Automation Builder (Typebot Fork)
 
-<p align="center">
-Typebot is a Fair Source chatbot builder. It allows you to create advanced chatbots visually, embed them anywhere on your web/mobile apps, and collect results in real-time
-</p>
-
-<p align="center">
-<a href="https://github.com/baptistearno/typebot.io/stargazers"><img src="https://img.shields.io/github/stars/baptistearno/typebot.io" alt="Github Stars"></a>
-</a>
-<a href="https://github.com/baptistearno/typebot.io/pulse"><img src="https://img.shields.io/github/commit-activity/m/baptistearno/typebot.io" alt="Commits per month"></a>
-<a href="https://docs.typebot.io/self-hosting/guides/docker">
-<img src="https://img.shields.io/docker/pulls/baptistearno/typebot-builder">
-</a>
-<a href="https://github.com/baptistearno/typebot.io/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPLv3-purple" alt="License">
-<a href="https://status.typebot.io"><img height="20px" src="https://betteruptime.com/status-badges/v1/monitor/a9kf.svg" alt="Uptime"></a>
-<a href="https://github.com/baptisteArno/typebot.io/issues/new?template=bug_report.md"><img src="https://img.shields.io/badge/Report a bug-Github-%231F80C0" alt="Report a bug"></a>
-<a href="https://typebot.io/discord"><img src="https://img.shields.io/badge/Join community-Discord-%23404EED" alt="Ask a question"></a>
-
-</p>
-
-<h3 align="center">
-  <b><a href="https://app.typebot.io/register">Try Typebot</a></b>
-  •
-  <b><a href="https://docs.typebot.io/">Docs</a></b>
+> **Base:** Typebot (Fair Source) · **Stack:** Next.js · TypeScript · Prisma · Bun
 
 ---
 
-## Builder demo
+## Overview
 
-https://user-images.githubusercontent.com/16015833/168876388-0310678d-080b-4eca-8633-e5cc4d7bd5d1.mp4
+`crm-bot` is a customized fork of [Typebot](https://typebot.io) — a visual chatbot/automation builder. It provides:
 
-## Features
+- **Visual flow builder** — drag-and-drop chatbot and automation workflow designer
+- **Chatbot viewer** — embeddable runtime that executes bot flows
+- **CRM integration** — connected to `crm-api` for data lookup and contact/ticket creation
+- **Omni-channel bot** — bots can be deployed on Facebook Messenger, WhatsApp, website widget
 
-Typebot makes it easy to create advanced chatbots. It provides the building blocks that are adaptable to any business use case. I improve Typebot regularly with bug fixes, new features, and performance improvements.
+## Apps in the Monorepo
 
-**Chat builder** with 34+ building blocks such as:
+| App | Description |
+|---|---|
+| `apps/builder` | Next.js visual flow builder UI |
+| `apps/viewer` | Next.js chatbot viewer/runtime |
+| `apps/docs` | Documentation site |
+| `apps/landing-page` | Marketing landing page |
+| `apps/workflows` | Workflow engine (background processing) |
 
-- 💬 Bubbles: Text, Image / GIF, video, audio, embed.
-- 🔤 Inputs: Text, email, phone number, buttons, picture choice, date picker, payment (Stripe), file picker...
-- 🧠 Logic: Conditional branching, URL redirections, scripting (Javascript), A/B testing.
-- 🔌 Integrations: Webhook / HTTP requests, OpenAI, Google Sheets, Google Analytics, Meta Pixel, Zapier, Make.com, Chatwoot, More to come...
+## Key Features (Inherited from Typebot)
 
-**Theme** your chatbot to match your brand identity:
+- 34+ building blocks (text, input, logic, integrations)
+- Conditional branching, scripting (JavaScript), A/B testing
+- OpenAI integration for AI-powered responses
+- Webhook / HTTP request blocks for CRM API integration
+- Custom themes with CSS override support
+- Analytics: completion rates, drop-off rates
+- CSV export of results
 
-- 🎨 Customize the fonts, background, colors, roundness, shadows, and more
-- 💪 Advanced theming with custom CSS
-- 💾 Reusable theme templates
+## CRM Integration Points
 
-**Share** your typebot anywhere:
+The bot connects to `crm-api` to:
+- Look up contacts by phone/email
+- Create or update contacts from bot conversations
+- Create tickets from conversations
+- Trigger automation rules
 
-- 🔗 Custom domain
-- 👨‍💻 Embed as a container, popup, or chat bubble easily with the native JS library
-- ⚡ Blazing-fast embed lib. No iframe, no external dependencies, no performance impact
-- 💻 Executable with HTTP requests
+## Local Development
 
-Collect your **Results** and get insights:
+Follow the [Typebot local installation guide](https://docs.typebot.io/contribute/guides/local-installation):
 
-- 📊 In-depth analytics with drop-off rates, completion rates, and more
-- 📥 Export results to CSV
+```bash
+cd crm-bot
+bun install
 
-Built for **developers**:
+# Start all apps
+bun dev
+```
 
-- 🔓 No vendor-locking. Features built with flexibility in mind.
-- 💻 Easy-to-use [APIs](https://docs.typebot.io/api-reference).
+Or start individual apps:
+```bash
+cd apps/builder && bun dev   # http://localhost:3000
+cd apps/viewer  && bun dev   # http://localhost:3001
+```
 
-## Getting started with Typebot
+## Environment Variables
 
-The easiest way to get started with Typebot is with [the official managed service in the Cloud](https://app.typebot.io). You'll have high availability, backups, security, and maintenance all managed for you by me, [Baptiste, Typebot's founder](https://twitter.com/baptisteArno).
+Copy the example files and fill in:
+```bash
+cp apps/builder/.env.dev.example apps/builder/.env.dev
+cp apps/viewer/.env.dev.example  apps/viewer/.env.dev
+```
 
-The cloud version can save a substantial amount of developer time and resources. For most sites, this ends up being the best value option and the revenue goes to funding the maintenance and further development of Typebot.
-So you’ll be supporting Fair Source software and getting a great service! 💙
+Key variables:
+| Variable | Description |
+|---|---|
+| `DATABASE_URL` | PostgreSQL connection string (Prisma) |
+| `NEXTAUTH_SECRET` | Auth secret |
+| `NEXTAUTH_URL` | Builder base URL |
+| `VIEWER_URL` | Viewer/embed base URL |
+| `ENCRYPTION_SECRET` | Secret for encrypting credentials |
+| `CRM_API_URL` | `crm-api` base URL for integration |
 
-## Support & Community
+## Docker
 
-You'll find a lot of resources to help you get started with Typebot in the [documentation](https://docs.typebot.io/).
-
-- Have a question? Join the [Discord server](https://typebot.io/discord) and get instant help.
-- Found a bug? [Create an issue](https://github.com/baptisteArno/typebot.io/issues/new)
-
-## Self-hosting
-
-Interested in self-hosting Typebot on your server? Take a look at the [self-hosting installation instructions](https://docs.typebot.io/self-hosting/get-started).
-
-## How to Contribute
-
-You are awesome, let's build great software together. Head over to the [Contribute docs](https://docs.typebot.io/contribute/overview) to get started. 💪
-
-## Run the project locally
-
-Follow the [Local installation](https://docs.typebot.io/contribute/guides/local-installation) section of in the Contributing docs.
-
-### Top contributors
-
-<a href="https://github.com/baptistearno/typebot.io/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=baptistearno/typebot.io" />
-</a>
-
-Made with [contrib.rocks](https://contrib.rocks).
+```bash
+docker-compose -f docker-compose.dev.yml up -d
+```
 
 ## License
 
-Typebot's code is protected under a Functional Source License. You will find more information about the license and how to comply with it [here](https://docs.typebot.io/self-hosting#license-requirements).
+Typebot is licensed under [Functional Source License (FSL)](https://docs.typebot.io/self-hosting#license-requirements). Self-hosting is allowed for internal use; commercial redistribution requires a commercial license.
