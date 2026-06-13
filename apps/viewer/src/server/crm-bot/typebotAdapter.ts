@@ -1,15 +1,25 @@
 import { handleContinueChat } from "@typebot.io/bot-engine/api/handleContinueChat";
 import { handleStartChat } from "@typebot.io/bot-engine/api/handleStartChat";
 import type {
-  BotReplyRequest,
   BotReplyResponse,
   BotReplyButton,
 } from "./types";
 
 type TypebotRuntimeResponse = Record<string, any>;
 
+/** Input for TypebotAdapter — includes flowId resolved by BotService */
+type TypebotAdapterInput = {
+  org: string;
+  conversationId: string;
+  flowId: string;
+  inboundMessageId: string;
+  text: string;
+  channel: string;
+  sessionId?: string | null;
+};
+
 export class TypebotAdapter {
-  async reply(input: BotReplyRequest): Promise<BotReplyResponse> {
+  async reply(input: TypebotAdapterInput): Promise<BotReplyResponse> {
     if (input.sessionId) {
       const response = await handleContinueChat({
         input: {

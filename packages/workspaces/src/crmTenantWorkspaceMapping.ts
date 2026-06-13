@@ -212,6 +212,9 @@ export const provisionCrmTenantWorkspace = async ({
       select: { id: true },
     });
 
+    // Create default welcome bot flow for new tenant
+    await createDefaultWelcomeBot(tx, workspace.id);
+
     const now = new Date();
     const mapping: CrmTenantWorkspaceMapping = {
       id: randomUUID(),
@@ -230,5 +233,145 @@ export const provisionCrmTenantWorkspace = async ({
     `;
 
     return mapping;
+  });
+};
+
+/**
+ * Creates a default "Welcome Bot" flow in the tenant's workspace.
+ * The flow has 3 steps:
+ * 1. Greeting text bubble
+ * 2. Choice input (Talk to agent / Continue)
+ * 3. Handoff block (if user chooses agent)
+ *
+ * The bot is auto-published so it's immediately available for channel assignment.
+ */
+const createDefaultWelcomeBot = async (
+  tx: PrismaLike,
+  workspaceId: string,
+) => {
+  const startGroupId = randomUUID();
+  const greetingGroupId = randomUUID();
+  const handoffGroupId = randomUUID();
+
+  const groups = [
+    {
+      id: startGroupId,
+      title: "Start",
+      graphCoordinates: { x: 0, y: 0 },
+      blocks: [
+        {
+          id: randomUUID(),
+          type: "start",
+          groupId: startGroupId,
+        },
+      ],
+    },
+    {
+      id: greetingGroupId,
+      title: "Greeting",
+      graphCoordinates: { x: 400, y: 0 },
+      blocks: [
+        {
+          id: randomUUID(),
+          type: "text",
+          groupId: greetingGroupId,
+          content: {
+            richText: [
+              {
+                type: "p",
+                children: [
+                  {
+                    text: "👋 Xin chào! Tôi là trợ lý ảo. Tôi có thể giúp gì cho bạn?",
+                  },
+                ],
+              },
+            ],
+          },
+        },
+        {
+          id: randomUUID(),
+          type: "choice input",
+          groupId: greetingGroupId,
+          items: [
+            {
+              id: randomUUID(),
+              content: "Nói chuyện với tư vấn viên",
+            },
+            {
+              id: randomUUID(),
+              content: "Tôi muốn tìm hiểu thêm",
+            },
+          ],
+        },
+      ],
+    },
+    {
+      id: handoffGroupId,
+      title: "Handoff",
+      graphCoordinates: { x: 800, y: 0 },
+      blocks: [
+        {
+          id: randomUUID(),
+          type: "text",
+          groupId: handoffGroupId,
+          content: {
+            richText: [
+              {
+                type: "p",
+                children: [
+                  {
+                    text: "Đang chuyển bạn đến tư vấn viên. Vui lòng chờ trong giây lát...",
+                  },
+                ],
+              },
+            ],
+          },
+        },
+        {
+          id: randomUUID(),
+          type: "Set variable",
+          groupId: handoffGroupId,
+          options: {
+            variableId: undefined,
+            expressionToEvaluate: undefined,
+            type: "Custom",
+          },
+          content: {
+            // Signal handoff to crm-api
+            handoff: true,
+            event: "handoff_to_agent",
+          },
+        },
+      ],
+    },
+  ];
+
+  const publicId = `welcome-bot-${workspaceId.substring(0, 8)}`;
+
+  const typebot = await tx.typebot.create({
+    data: {
+      name: "Welcome Bot",
+      icon: "🤖",
+      workspaceId,
+      publicId,
+      groups,
+      variables: [],
+      edges: [],
+      theme: {},
+      settings: {},
+    },
+    select: { id: true },
+  });
+
+  // Auto-publish the welcome bot
+  await tx.publicTypebot.create({
+    data: {
+      typebotId: typebot.id,
+      groups,
+      variables: [],
+      edges: [],
+      theme: {},
+      settings: {},
+    },
   });
 };

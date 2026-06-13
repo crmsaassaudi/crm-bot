@@ -3,7 +3,6 @@ import { z } from "zod";
 export const botReplyRequestSchema = z.object({
   org: z.string().min(1),
   conversationId: z.string().min(1),
-  flowId: z.string().min(1),
   inboundMessageId: z.string().min(1),
   text: z.string().min(1),
   channel: z.string().min(1),
