@@ -68,6 +68,22 @@ export const getCrmWorkspaceMappingForOwnerEmail = async (
   return rows[0] ?? null;
 };
 
+/**
+ * Returns ALL workspace mappings for an owner email.
+ * Used by handleListWorkspaces to show multi-tenant users all their workspaces.
+ */
+export const getAllCrmWorkspaceMappingsForOwnerEmail = async (
+  ownerEmail: string,
+  client: PrismaLike = prisma,
+) => {
+  return (await client.$queryRaw`
+    SELECT "id", "tenantId", "workspaceId", "ownerEmail", "createdAt", "updatedAt"
+    FROM "CrmTenantWorkspaceMapping"
+    WHERE "ownerEmail" = ${normalizeCrmOwnerEmail(ownerEmail)}
+    ORDER BY "updatedAt" DESC
+  `) as CrmTenantWorkspaceMapping[];
+};
+
 export const touchCrmWorkspaceMapping = async (
   tenantId: string,
   client: PrismaLike = prisma,

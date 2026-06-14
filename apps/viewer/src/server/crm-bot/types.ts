@@ -6,6 +6,8 @@ export const botReplyRequestSchema = z.object({
   inboundMessageId: z.string().min(1),
   text: z.string().min(1),
   channel: z.string().min(1),
+  /** CRM Channel document _id — used to resolve which flow to run */
+  channelId: z.string().min(1).optional(),
   sessionId: z.string().min(1).nullish(),
   /** CRM-API callback URL — bot will POST results here after processing */
   callbackUrl: z.string().url(),

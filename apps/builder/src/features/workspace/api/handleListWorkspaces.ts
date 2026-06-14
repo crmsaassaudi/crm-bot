@@ -2,7 +2,7 @@ import { ORPCError } from "@orpc/server";
 import { env } from "@typebot.io/env";
 import prisma from "@typebot.io/prisma";
 import type { User } from "@typebot.io/user/schemas";
-import { getCrmWorkspaceMappingForOwnerEmail } from "@typebot.io/workspaces/crmTenantWorkspaceMapping";
+import { getAllCrmWorkspaceMappingsForOwnerEmail } from "@typebot.io/workspaces/crmTenantWorkspaceMapping";
 
 export const handleListWorkspaces = async ({
   context: { user },
@@ -10,12 +10,14 @@ export const handleListWorkspaces = async ({
   context: { user: Pick<User, "id" | "email"> };
 }) => {
   if (env.CRM_BOT_SSO_LOCKDOWN) {
-    const mapping = await getCrmWorkspaceMappingForOwnerEmail(user.email);
-    if (!mapping) return { workspaces: [] };
+    const mappings = await getAllCrmWorkspaceMappingsForOwnerEmail(user.email);
+    if (mappings.length === 0) return { workspaces: [] };
+
+    const workspaceIds = mappings.map((m) => m.workspaceId);
 
     const workspaces = await prisma.workspace.findMany({
       where: {
-        id: mapping.workspaceId,
+        id: { in: workspaceIds },
         members: { some: { userId: user.id } },
       },
       select: { name: true, id: true, icon: true, plan: true },

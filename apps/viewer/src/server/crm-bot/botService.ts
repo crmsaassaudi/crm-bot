@@ -76,19 +76,15 @@ export class BotService {
     let resolvedFlowId: string | undefined;
 
     if (!input.sessionId) {
-      const flow = await resolveFlowForTenant(input.org);
+      const flow = await resolveFlowForTenant(input.org, input.channelId);
       if (!flow) {
+        // No flow bound to this channel → SKIP (let agent handle)
         return {
           ok: true,
           sessionId: undefined,
           status: "ended",
           handoff: false,
-          messages: [
-            {
-              type: "text",
-              text: "Bot chưa được cấu hình cho tổ chức này.",
-            },
-          ],
+          messages: [],
         };
       }
 
