@@ -1,8 +1,8 @@
 name: Release new Typebot version
 
 on:
-  push:
-    tags: ["v*", "next"]
+  # Disabled: upstream Typebot release (pushes to baptistearno Docker Hub), not used in this fork. Manual-only.
+  workflow_dispatch:
 
 permissions:
   contents: read

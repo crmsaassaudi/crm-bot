@@ -1,9 +1,8 @@
 name: Create Tag
 
 on:
-  push:
-    branches:
-      - main
+  # Disabled: upstream Typebot workflow, not used in this fork. Manual-only.
+  workflow_dispatch:
 
 permissions:
   contents: write

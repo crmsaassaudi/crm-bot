@@ -1,8 +1,8 @@
 name: Daily job
 
 on:
-  schedule:
-    - cron: "30 5 * * *"
+  # Disabled: upstream Typebot cron (PostHog/Stripe/Discord), not used in this fork. Manual-only.
+  workflow_dispatch:
 
 permissions:
   contents: read

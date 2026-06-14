@@ -1,9 +1,8 @@
 name: Deploy Partykit server
 
 on:
-  push:
-    branches:
-      - main
+  # Disabled: upstream Typebot workflow (Partykit/Cloudflare), not used in this fork. Manual-only.
+  workflow_dispatch:
 
 permissions:
   contents: read

@@ -1,8 +1,8 @@
 name: Hourly job
 
 on:
-  schedule:
-    - cron: "0 * * * *"
+  # Disabled: upstream Typebot cron (Stripe/SMTP), not used in this fork. Manual-only.
+  workflow_dispatch:
 
 permissions:
   contents: read

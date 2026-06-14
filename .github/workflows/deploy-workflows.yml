@@ -1,9 +1,8 @@
 name: Deploy Workflows (Fly.io)
 
 on:
-  push:
-    branches:
-      - main
+  # Disabled: upstream Typebot workflow (Fly.io), not used in this fork. Manual-only.
+  workflow_dispatch:
 
 permissions:
   contents: read

@@ -1,8 +1,8 @@
 name: "Close stale issues"
 
 on:
-  schedule:
-    - cron: "30 1 * * *"
+  # Disabled: upstream Typebot issue triage, not used in this fork. Manual-only.
+  workflow_dispatch:
 
 permissions:
   issues: write

@@ -1,8 +1,8 @@
 name: Monthly job
 
 on:
-  schedule:
-    - cron: "30 6 1 * *"
+  # Disabled: upstream Typebot cron, not used in this fork. Manual-only.
+  workflow_dispatch:
 
 permissions:
   contents: read
