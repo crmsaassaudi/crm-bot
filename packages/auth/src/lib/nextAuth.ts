@@ -12,10 +12,9 @@ import { mergeIds } from "@typebot.io/telemetry/mergeIds";
 import { trackEvents } from "@typebot.io/telemetry/trackEvents";
 import { clientUserSchema } from "@typebot.io/user/schemas";
 import {
-  ensureCrmOwnerWorkspaceMembership,
-  getCrmWorkspaceMappingForOwnerEmail,
+  getAllCrmWorkspaceMappingsForOwnerEmail,
   normalizeCrmOwnerEmail,
-  pruneCrmOwnerWorkspaceMemberships,
+  syncCrmOwnerWorkspaceMemberships,
   touchCrmWorkspaceMapping,
 } from "@typebot.io/workspaces/crmTenantWorkspaceMapping";
 import type { NextRequest } from "next/server";
@@ -96,21 +95,21 @@ const nextAuth = NextAuth((req) => ({
           user: parsedUser,
         };
 
-      const mapping = await getCrmWorkspaceMappingForOwnerEmail(
+      const mappings = await getAllCrmWorkspaceMappingsForOwnerEmail(
         parsedUser.email,
       );
-      if (mapping)
-        await ensureCrmOwnerWorkspaceMembership({
-          ownerEmail: parsedUser.email,
-          workspaceId: mapping.workspaceId,
-        });
+      // Ensure membership for all mapped workspaces
+      await syncCrmOwnerWorkspaceMemberships({
+        ownerEmail: parsedUser.email,
+      });
 
+      const firstMapping = mappings[0];
       return {
         ...session,
         user: {
           ...parsedUser,
-          crmTenantId: mapping?.tenantId,
-          crmWorkspaceId: mapping?.workspaceId,
+          crmTenantId: firstMapping?.tenantId,
+          crmWorkspaceId: firstMapping?.workspaceId,
         },
       };
     },
@@ -164,14 +163,11 @@ const assertCrmOwnerKeycloakSignIn = async ({
   if (!ownerEmail) throw new Error("crm-owner-email-missing");
 
   const normalizedEmail = normalizeCrmOwnerEmail(ownerEmail);
-  const mapping = await getCrmWorkspaceMappingForOwnerEmail(normalizedEmail);
-  if (!mapping) throw new Error("crm-workspace-not-provisioned");
+  const mappings = await getAllCrmWorkspaceMappingsForOwnerEmail(normalizedEmail);
+  if (mappings.length === 0) throw new Error("crm-workspace-not-provisioned");
 
-  await touchCrmWorkspaceMapping(mapping.tenantId);
-  await pruneCrmOwnerWorkspaceMemberships({
-    ownerEmail: normalizedEmail,
-    workspaceId: mapping.workspaceId,
-  });
+  // Touch the most recent mapping to update activity timestamp
+  await touchCrmWorkspaceMapping(mappings[0]!.tenantId);
 };
 
 const updateCookieIsMerged = ({

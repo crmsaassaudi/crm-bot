@@ -161,12 +161,14 @@ export const ensureCrmOwnerWorkspaceMembership = async ({
   });
 };
 
-export const pruneCrmOwnerWorkspaceMemberships = async ({
+/**
+ * Ensures the user has memberships for ALL their CRM workspaces,
+ * and removes memberships for workspaces NOT in any CRM mapping.
+ */
+export const syncCrmOwnerWorkspaceMemberships = async ({
   ownerEmail,
-  workspaceId,
 }: {
   ownerEmail: string;
-  workspaceId: string;
 }) => {
   if (!isCrmSsoLockdownEnabled()) return;
 
@@ -178,14 +180,26 @@ export const pruneCrmOwnerWorkspaceMemberships = async ({
 
   if (!owner) return;
 
-  await prisma.memberInWorkspace.deleteMany({
-    where: {
-      userId: owner.id,
-      workspaceId: { not: workspaceId },
-    },
-  });
+  const mappings = await getAllCrmWorkspaceMappingsForOwnerEmail(ownerEmail);
+  const mappedWorkspaceIds = mappings.map((m) => m.workspaceId);
 
-  await ensureCrmOwnerWorkspaceMembership({ ownerEmail, workspaceId });
+  // Ensure membership for every mapped workspace
+  for (const wsId of mappedWorkspaceIds) {
+    await ensureCrmOwnerWorkspaceMembership({
+      ownerEmail: normalizedEmail,
+      workspaceId: wsId,
+    });
+  }
+
+  // Remove memberships for workspaces NOT in any CRM mapping
+  if (mappedWorkspaceIds.length > 0) {
+    await prisma.memberInWorkspace.deleteMany({
+      where: {
+        userId: owner.id,
+        workspaceId: { notIn: mappedWorkspaceIds },
+      },
+    });
+  }
 };
 
 export const provisionCrmTenantWorkspace = async ({
