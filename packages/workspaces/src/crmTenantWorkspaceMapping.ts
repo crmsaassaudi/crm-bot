@@ -238,34 +238,34 @@ export const provisionCrmTenantWorkspace = async ({
 
 /**
  * Creates a default "Welcome Bot" flow in the tenant's workspace.
- * The flow has 3 steps:
- * 1. Greeting text bubble
- * 2. Choice input (Talk to agent / Continue)
- * 3. Handoff block (if user chooses agent)
+ * Uses the same data format as Typebot's official handleCreateTypebot.
  *
- * The bot is auto-published so it's immediately available for channel assignment.
+ * The flow has 2 groups:
+ * 1. Greeting text bubble + choice input
+ * 2. Handoff text
+ *
+ * The bot is auto-published so it's immediately available.
  */
 const createDefaultWelcomeBot = async (
   tx: PrismaLike,
   workspaceId: string,
 ) => {
-  const startGroupId = randomUUID();
   const greetingGroupId = randomUUID();
   const handoffGroupId = randomUUID();
+  const startEventId = randomUUID();
+  const edgeId = randomUUID();
+
+  // V6 format: events array with start event (no "start" block in groups)
+  const events = [
+    {
+      id: startEventId,
+      type: "start" as const,
+      graphCoordinates: { x: 0, y: 0 },
+      outgoingEdgeId: edgeId,
+    },
+  ];
 
   const groups = [
-    {
-      id: startGroupId,
-      title: "Start",
-      graphCoordinates: { x: 0, y: 0 },
-      blocks: [
-        {
-          id: randomUUID(),
-          type: "start",
-          groupId: startGroupId,
-        },
-      ],
-    },
     {
       id: greetingGroupId,
       title: "Greeting",
@@ -327,22 +327,16 @@ const createDefaultWelcomeBot = async (
             ],
           },
         },
-        {
-          id: randomUUID(),
-          type: "Set variable",
-          groupId: handoffGroupId,
-          options: {
-            variableId: undefined,
-            expressionToEvaluate: undefined,
-            type: "Custom",
-          },
-          content: {
-            // Signal handoff to crm-api
-            handoff: true,
-            event: "handoff_to_agent",
-          },
-        },
       ],
+    },
+  ];
+
+  // Edge from start event to greeting group
+  const edges = [
+    {
+      id: edgeId,
+      from: { eventId: startEventId },
+      to: { groupId: greetingGroupId },
     },
   ];
 
@@ -350,15 +344,25 @@ const createDefaultWelcomeBot = async (
 
   const typebot = await tx.typebot.create({
     data: {
+      version: "6.1",
       name: "Welcome Bot",
       icon: "🤖",
       workspaceId,
       publicId,
       groups,
+      events,
       variables: [],
-      edges: [],
+      edges,
       theme: {},
       settings: {},
+      folderId: null,
+      selectedThemeTemplateId: null,
+      customDomain: null,
+      whatsAppCredentialsId: null,
+      resultsTablePreferences: null,
+      riskLevel: null,
+      isArchived: false,
+      isClosed: false,
     },
     select: { id: true },
   });
@@ -367,9 +371,11 @@ const createDefaultWelcomeBot = async (
   await tx.publicTypebot.create({
     data: {
       typebotId: typebot.id,
+      version: "6.1",
       groups,
+      events,
       variables: [],
-      edges: [],
+      edges,
       theme: {},
       settings: {},
     },
