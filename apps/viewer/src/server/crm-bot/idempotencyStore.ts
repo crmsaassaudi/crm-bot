@@ -1,11 +1,11 @@
 import redis from "@typebot.io/lib/redis";
-import type { BotReplyResponse } from "./types";
+import type { BotReplyResult } from "./types";
 
 const IDEMPOTENCY_TTL_SECONDS = 24 * 60 * 60;
 
 type BeginResult =
   | { status: "started" }
-  | { status: "duplicate"; cached?: BotReplyResponse };
+  | { status: "duplicate"; cached?: BotReplyResult };
 
 export class BotReplyIdempotencyStore {
   async begin(inboundMessageId: string): Promise<BeginResult> {
@@ -36,7 +36,7 @@ export class BotReplyIdempotencyStore {
 
   async complete(
     inboundMessageId: string,
-    response: BotReplyResponse,
+    response: BotReplyResult,
   ): Promise<void> {
     this.assertRedis();
 

@@ -1,7 +1,7 @@
 import { handleContinueChat } from "@typebot.io/bot-engine/api/handleContinueChat";
 import { handleStartChat } from "@typebot.io/bot-engine/api/handleStartChat";
 import type {
-  BotReplyResponse,
+  BotReplyResult,
   BotReplyButton,
 } from "./types";
 
@@ -19,7 +19,7 @@ type TypebotAdapterInput = {
 };
 
 export class TypebotAdapter {
-  async reply(input: TypebotAdapterInput): Promise<BotReplyResponse> {
+  async reply(input: TypebotAdapterInput): Promise<BotReplyResult> {
     if (input.sessionId) {
       const response = await handleContinueChat({
         input: {
@@ -57,7 +57,7 @@ export class TypebotAdapter {
 export const normalizeTypebotResponse = (
   response: TypebotRuntimeResponse,
   sessionId?: string,
-): BotReplyResponse => {
+): BotReplyResult => {
   const messages = (response.messages ?? [])
     .map(normalizeBubble)
     .filter((message: any) => message?.text?.trim());
