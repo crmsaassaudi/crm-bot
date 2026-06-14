@@ -19,6 +19,7 @@ build
 firebaseServiceAccount.json
 
 .env.production
+.env.prod
 .env.staging
 .env.development
 

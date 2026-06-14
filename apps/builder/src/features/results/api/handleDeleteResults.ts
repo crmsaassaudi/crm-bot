@@ -25,7 +25,7 @@ export const handleDeleteResults = async ({
   context: { user },
 }: {
   input: z.infer<typeof deleteResultsInputSchema>;
-  context: { user: Pick<User, "id"> };
+  context: { user: Pick<User, "id" | "email"> };
 }) => {
   const idsArray = input.resultIds?.split(",");
   const { typebotId } = input;

@@ -78,6 +78,7 @@ export const generateUploadUrl = authenticatedProcedure
 
       const filePath = await parseFilePath({
         authenticatedUserId: user?.id,
+        authenticatedUserEmail: user?.email,
         uploadProps: filePathProps,
       });
 
@@ -90,11 +91,13 @@ export const generateUploadUrl = authenticatedProcedure
 
 type Props = {
   authenticatedUserId?: string;
+  authenticatedUserEmail?: string | null;
   uploadProps: FilePathUploadProps;
 };
 
 const parseFilePath = async ({
   authenticatedUserId,
+  authenticatedUserEmail,
   uploadProps: input,
 }: Props): Promise<string> => {
   if (!authenticatedUserId)
@@ -164,6 +167,7 @@ const parseFilePath = async ({
     !typebot ||
     (await isWriteTypebotForbidden(typebot, {
       id: authenticatedUserId,
+      email: authenticatedUserEmail ?? null,
     }))
   )
     throw new ORPCError("NOT_FOUND", { message: "Typebot not found" });

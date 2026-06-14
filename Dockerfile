@@ -26,6 +26,9 @@ FROM base AS builder
 ARG SCOPE
 COPY . .
 RUN SENTRYCLI_SKIP_DOWNLOAD=1 bun install --frozen-lockfile
+# Apply nx sync generators (tsconfig project references) before build — nx errors on an
+# out-of-sync workspace in non-interactive (CI/Docker) mode instead of auto-applying.
+RUN DATABASE_URL=postgresql:// bunx nx sync
 RUN SKIP_ENV_CHECK=true DATABASE_URL=postgresql:// NEXT_PUBLIC_VIEWER_URL=http://localhost bunx nx build ${SCOPE}
 RUN DATABASE_URL=postgresql:// bunx nx db:generate prisma
 
@@ -43,7 +46,8 @@ COPY --from=builder --chown=node:node /app/apps/${SCOPE}/public ./apps/${SCOPE}/
 
 
 COPY scripts/${SCOPE}-entrypoint.sh ./
-RUN chmod +x ./${SCOPE}-entrypoint.sh
+# Strip CRLF (scripts may be checked out / copied from Windows) so the shebang resolves, then make executable.
+RUN sed -i 's/\r$//' ./${SCOPE}-entrypoint.sh && chmod +x ./${SCOPE}-entrypoint.sh
 USER node
 ENTRYPOINT ./${SCOPE}-entrypoint.sh
 

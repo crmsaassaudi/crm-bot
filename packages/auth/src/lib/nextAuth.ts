@@ -13,7 +13,6 @@ import { trackEvents } from "@typebot.io/telemetry/trackEvents";
 import { clientUserSchema } from "@typebot.io/user/schemas";
 import {
   ensureCrmOwnerWorkspaceMembership,
-  getCrmWorkspaceMappingByTenantId,
   getCrmWorkspaceMappingForOwnerEmail,
   normalizeCrmOwnerEmail,
   pruneCrmOwnerWorkspaceMemberships,
@@ -115,14 +114,12 @@ const nextAuth = NextAuth((req) => ({
         },
       };
     },
-    signIn: async ({ account, user, email, profile }) => {
+    signIn: async ({ account, user, email }) => {
       if (!account) return false;
       if (env.CRM_BOT_SSO_LOCKDOWN) {
         if (account.provider !== "keycloak") return false;
         await assertCrmOwnerKeycloakSignIn({
           ownerEmail: user.email,
-          idToken: account.id_token,
-          profile,
         });
       }
       const isNewUser = !("createdAt" in user && isDefined(user.createdAt));
@@ -155,58 +152,26 @@ const nextAuth = NextAuth((req) => ({
   },
 }));
 
+// Owner-only access is resolved by the authenticated (email_verified) Keycloak email
+// against the CrmTenantWorkspaceMapping created during onboarding — mirroring crm-api,
+// which derives tenant membership from DB identity rather than trusting raw JWT claims.
+// (The Keycloak crm-bot client does not emit a tenant claim.)
 const assertCrmOwnerKeycloakSignIn = async ({
   ownerEmail,
-  idToken,
-  profile,
 }: {
   ownerEmail?: string | null;
-  idToken?: string | null;
-  profile?: unknown;
 }) => {
   if (!ownerEmail) throw new Error("crm-owner-email-missing");
 
-  const tenantId =
-    getTenantIdFromClaims(profile) ?? getTenantIdFromJwt(idToken);
-  if (!tenantId) throw new Error("crm-tenant-id-missing");
-
-  const mapping = await getCrmWorkspaceMappingByTenantId(tenantId);
-  if (!mapping) throw new Error("crm-workspace-not-provisioned");
-
   const normalizedEmail = normalizeCrmOwnerEmail(ownerEmail);
-  if (mapping.ownerEmail !== normalizedEmail)
-    throw new Error("crm-workspace-owner-only");
+  const mapping = await getCrmWorkspaceMappingForOwnerEmail(normalizedEmail);
+  if (!mapping) throw new Error("crm-workspace-not-provisioned");
 
   await touchCrmWorkspaceMapping(mapping.tenantId);
   await pruneCrmOwnerWorkspaceMemberships({
     ownerEmail: normalizedEmail,
     workspaceId: mapping.workspaceId,
   });
-};
-
-const getTenantIdFromClaims = (claimsLike: unknown) => {
-  if (!claimsLike || typeof claimsLike !== "object") return;
-
-  const claims = claimsLike as Record<string, unknown>;
-  const tenantId = claims.tenantId ?? claims.tenant_id;
-
-  return typeof tenantId === "string" && tenantId.trim().length > 0
-    ? tenantId.trim()
-    : undefined;
-};
-
-const getTenantIdFromJwt = (idToken?: string | null) => {
-  if (!idToken) return;
-
-  try {
-    const [, payload] = idToken.split(".");
-    if (!payload) return;
-    return getTenantIdFromClaims(
-      JSON.parse(Buffer.from(payload, "base64url").toString("utf8")),
-    );
-  } catch {
-    return;
-  }
 };
 
 const updateCookieIsMerged = ({
