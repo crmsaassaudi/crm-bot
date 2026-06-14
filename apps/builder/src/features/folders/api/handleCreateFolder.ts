@@ -1,4 +1,5 @@
 import { ORPCError } from "@orpc/server";
+import { env } from "@typebot.io/env";
 import prisma from "@typebot.io/prisma";
 import { Plan } from "@typebot.io/prisma/enum";
 import type { Prisma } from "@typebot.io/prisma/types";
@@ -30,7 +31,7 @@ export const handleCreateFolder = async ({
   if (userRole === "guest" || !workspace)
     throw new ORPCError("NOT_FOUND", { message: "Workspace not found" });
 
-  if (workspace.plan === Plan.FREE)
+  if (workspace.plan === Plan.FREE && !env.CRM_BOT_SSO_LOCKDOWN)
     throw new ORPCError("FORBIDDEN", {
       message: "You need to upgrade to a paid plan to create folders",
     });

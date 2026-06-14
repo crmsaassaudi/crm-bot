@@ -105,8 +105,8 @@ export const assertCrmOwnerWorkspaceAccess = async ({
   if (!isCrmSsoLockdownEnabled()) return;
   if (!ownerEmail) throw new Error("crm-workspace-owner-required");
 
-  const mapping = await getCrmWorkspaceMappingForOwnerEmail(ownerEmail);
-  if (!mapping || mapping.workspaceId !== workspaceId) {
+  const mappings = await getAllCrmWorkspaceMappingsForOwnerEmail(ownerEmail);
+  if (!mappings.some((m) => m.workspaceId === workspaceId)) {
     throw new Error("crm-workspace-forbidden");
   }
 };
