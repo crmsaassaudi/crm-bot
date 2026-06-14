@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTranslate } from "@tolgee/react";
+import { env } from "@typebot.io/env";
 import { EmojiOrImageIcon } from "@typebot.io/ui/components/EmojiOrImageIcon";
 import { Menu } from "@typebot.io/ui/components/Menu";
 import { ArrowDown01Icon } from "@typebot.io/ui/icons/ArrowDown01Icon";
@@ -65,10 +66,12 @@ export const WorkspaceDropdown = ({
             </div>
           </Menu.Item>
         ))}
-        <Menu.Item onClick={onCreateNewWorkspaceClick}>
-          <PlusSignIcon />
-          {t("workspace.dropdown.newButton.label")}
-        </Menu.Item>
+        {!env.CRM_BOT_SSO_LOCKDOWN && (
+          <Menu.Item onClick={onCreateNewWorkspaceClick}>
+            <PlusSignIcon />
+            {t("workspace.dropdown.newButton.label")}
+          </Menu.Item>
+        )}
         <Menu.Item onClick={onLogoutClick} className="text-orange-9">
           <LogoutSquare02Icon />
           {t("workspace.dropdown.logoutButton.label")}
