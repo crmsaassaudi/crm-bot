@@ -1,9 +1,6 @@
 import { resolveFlowForTenant } from "./flowResolver";
 import { BotReplyIdempotencyStore } from "./idempotencyStore";
-import {
-  TenantGuardError,
-  assertFlowBelongsToTenant,
-} from "./tenantGuard";
+import { assertFlowBelongsToTenant } from "./tenantGuard";
 import { TypebotAdapter } from "./typebotAdapter";
 import type {
   BotReplyRequest,
