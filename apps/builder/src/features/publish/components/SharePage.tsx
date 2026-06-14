@@ -20,6 +20,7 @@ import { isCloudProdInstance } from "@/helpers/isCloudProdInstance";
 import { orpcClient } from "@/lib/queryClient";
 import { toast } from "@/lib/toast";
 import { IntegrationButtons } from "./deploy/DeployButton";
+import { CrmChannelBindings } from "./CrmChannelBindings";
 import { EditableUrl } from "./EditableUrl";
 import { LinkPreviewMetadataForm } from "./LinkPreviewMetadataForm";
 
@@ -168,6 +169,17 @@ export const SharePage = () => {
             )}
           </div>
 
+          {env.NEXT_PUBLIC_CRM_BOT_SSO_LOCKDOWN && typebot && (
+            <div className="flex flex-col gap-4">
+              <h2>CRM Channels</h2>
+              <p className="text-sm text-zinc-500 -mt-2">
+                Toggle which channels this flow should serve. Each channel can
+                only be assigned to one flow.
+              </p>
+              <CrmChannelBindings typebotId={typebot.id} />
+            </div>
+          )}
+
           <div className="flex flex-col gap-4">
             <h2>{t("sharePage.embed.heading")}</h2>
             <div className="grid grid-cols-4 gap-4">
@@ -182,3 +194,4 @@ export const SharePage = () => {
     </div>
   );
 };
+

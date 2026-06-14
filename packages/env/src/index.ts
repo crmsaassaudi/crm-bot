@@ -87,6 +87,7 @@ const baseEnv = {
     TYPEBOT_DEBUG: boolean.optional().default(false),
     CRM_BOT_SSO_LOCKDOWN: boolean.optional().default(false),
     CRM_BOT_INTERNAL_SECRET: z.string().min(1).optional(),
+    CRM_API_INTERNAL_URL: z.string().url().optional(),
     SSRF_ALLOWED_HOSTS: z
       .string()
       .min(1)

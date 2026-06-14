@@ -21,6 +21,7 @@ import { generateGroupTitle } from "@/features/editor/api/generateGroupTitle";
 import { emailsRouter } from "@/features/emails/api/router";
 import { folderRouter } from "@/features/folders/api/router";
 import { forgeRouter } from "@/features/forge/api/router";
+import { crmChannelsRouter } from "@/features/publish/api/router";
 import { resultsRouter } from "@/features/results/api/router";
 import { telemetryRouter } from "@/features/telemetry/api/router";
 import { themeRouter } from "@/features/theme/api/router";
@@ -85,6 +86,7 @@ export const appRouter: AppRouter = {
   featureFlags: featureFlagsRouter,
   auth: authRouter,
   billing: billingRouter,
+  crmChannels: crmChannelsRouter,
 };
 
 export type AppRouter = {
@@ -117,4 +119,5 @@ export type AppRouter = {
   featureFlags: typeof featureFlagsRouter;
   auth: typeof authRouter;
   billing: typeof billingRouter;
+  crmChannels: typeof crmChannelsRouter;
 };
