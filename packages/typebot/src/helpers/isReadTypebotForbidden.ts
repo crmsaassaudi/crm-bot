@@ -24,14 +24,16 @@ export const isReadTypebotForbidden = async (
   if (isTypebotPublic) return false;
   if (!user) return true;
   const workspaceId = typebot.workspace.id ?? typebot.workspaceId;
-  if (env.CRM_BOT_SSO_LOCKDOWN && !workspaceId) return true;
-  if (
-    await isCrmOwnerWorkspaceForbidden({
-      ownerEmail: user.email,
-      workspaceId: workspaceId as string,
-    })
-  )
-    return true;
+  // CRM lockdown: if workspaceId is available, verify ownership; skip if not selected
+  if (env.CRM_BOT_SSO_LOCKDOWN && workspaceId) {
+    if (
+      await isCrmOwnerWorkspaceForbidden({
+        ownerEmail: user.email,
+        workspaceId,
+      })
+    )
+      return true;
+  }
   if (
     !env.CRM_BOT_SSO_LOCKDOWN &&
     (env.ADMIN_EMAIL ?? []).some((email) => email === user.email)

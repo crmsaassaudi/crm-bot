@@ -19,14 +19,17 @@ export const isWriteTypebotForbidden = async (
 ) => {
   const workspaceId = typebot.workspace.id ?? typebot.workspaceId;
 
-  return (
-    (isCrmSsoLockdownEnabled() && !workspaceId) ||
-    (workspaceId
+  // CRM lockdown: if workspaceId is available, verify ownership; skip if not selected
+  const crmForbidden =
+    isCrmSsoLockdownEnabled() && workspaceId
       ? await isCrmOwnerWorkspaceForbidden({
           ownerEmail: user.email,
           workspaceId,
         })
-      : false) ||
+      : false;
+
+  return (
+    crmForbidden ||
     typebot.workspace.isSuspended ||
     typebot.workspace.isPastDue ||
     (!typebot.collaborators.some(
