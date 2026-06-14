@@ -1,4 +1,5 @@
 import { ORPCError } from "@orpc/server";
+import { env } from "@typebot.io/env";
 import prisma from "@typebot.io/prisma";
 import { Plan, PrismaClientKnownRequestError } from "@typebot.io/prisma/enum";
 import { folderSchema } from "@typebot.io/schemas/features/folder";
@@ -32,7 +33,7 @@ export const handleUpdateFolder = async ({
   if (userRole === "guest" || !workspace)
     throw new ORPCError("NOT_FOUND", { message: "Workspace not found" });
 
-  if (workspace.plan === Plan.FREE)
+  if (workspace.plan === Plan.FREE && !env.CRM_BOT_SSO_LOCKDOWN)
     throw new ORPCError("FORBIDDEN", {
       message: "You need to upgrade to a paid plan to update folders",
     });

@@ -71,7 +71,7 @@ export const canPublishFileInput = async ({
     forbidden(res, "workspace not found");
     return false;
   }
-  if (workspace?.plan === Plan.FREE) {
+  if (workspace?.plan === Plan.FREE && !env.CRM_BOT_SSO_LOCKDOWN) {
     forbidden(res, "You need to upgrade your plan to use file input blocks");
     return false;
   }

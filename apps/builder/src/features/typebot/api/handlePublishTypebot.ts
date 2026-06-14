@@ -86,7 +86,7 @@ export const handlePublishTypebot = async ({
     group.blocks.some((block) => block.type === InputBlockType.FILE),
   );
 
-  if (hasFileUploadBlocks && existingTypebot.workspace.plan === Plan.FREE)
+  if (hasFileUploadBlocks && existingTypebot.workspace.plan === Plan.FREE && !env.CRM_BOT_SSO_LOCKDOWN)
     throw new ORPCError("BAD_REQUEST", {
       message: "File upload blocks can't be published on the free plan",
     });
