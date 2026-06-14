@@ -66,7 +66,7 @@ export const WorkspaceDropdown = ({
             </div>
           </Menu.Item>
         ))}
-        {!env.CRM_BOT_SSO_LOCKDOWN && (
+        {!env.NEXT_PUBLIC_CRM_BOT_SSO_LOCKDOWN && (
           <Menu.Item onClick={onCreateNewWorkspaceClick}>
             <PlusSignIcon />
             {t("workspace.dropdown.newButton.label")}

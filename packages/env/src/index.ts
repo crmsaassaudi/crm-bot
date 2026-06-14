@@ -141,6 +141,10 @@ const baseEnv = {
       .string()
       .optional()
       .default("The bot you're looking for doesn't exist"),
+    // Client-readable mirror of the server-side CRM_BOT_SSO_LOCKDOWN flag.
+    // Needed by client components (e.g. WorkspaceDropdown, isFreePlan) that
+    // can't access server-only env vars. Keep both vars in sync in .env.
+    NEXT_PUBLIC_CRM_BOT_SSO_LOCKDOWN: boolean.optional().default(false),
   },
   runtimeEnv: {
     NEXT_PUBLIC_VIEWER_URL: getRuntimeVariable("NEXT_PUBLIC_VIEWER_URL"),
@@ -159,6 +163,9 @@ const baseEnv = {
     ),
     NEXT_PUBLIC_VIEWER_404_SUBTITLE: getRuntimeVariable(
       "NEXT_PUBLIC_VIEWER_404_SUBTITLE",
+    ),
+    NEXT_PUBLIC_CRM_BOT_SSO_LOCKDOWN: getRuntimeVariable(
+      "NEXT_PUBLIC_CRM_BOT_SSO_LOCKDOWN",
     ),
   },
 };

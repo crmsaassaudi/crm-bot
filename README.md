@@ -187,6 +187,7 @@ cp .env.dev.example .env.dev
 | `REDIS_URL`               | ✅        | Redis for idempotency + sessions                 |
 | `ENCRYPTION_SECRET`       | ✅        | Secret for encrypting credentials                |
 | `CRM_BOT_SSO_LOCKDOWN`    | ✅        | `true` to enforce Keycloak-only login            |
+| `NEXT_PUBLIC_CRM_BOT_SSO_LOCKDOWN`  | ✅        | Client mirror of `CRM_BOT_SSO_LOCKDOWN` — must match it |
 | `CRM_BOT_INTERNAL_SECRET` | ✅        | Shared secret for crm-api ↔ crm-bot internal API |
 | `KEYCLOAK_CLIENT_ID`      | ✅        | Keycloak client ID for SSO                       |
 | `KEYCLOAK_CLIENT_SECRET`  | ✅        | Keycloak client secret                           |
