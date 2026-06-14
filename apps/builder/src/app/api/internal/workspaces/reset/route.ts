@@ -1,4 +1,4 @@
-import { timingSafeEqual } from "node:crypto";
+import { isAuthorizedCrmInternalRequest } from "@typebot.io/auth/helpers/isAuthorizedCrmInternalRequest";
 import { env } from "@typebot.io/env";
 import prisma from "@typebot.io/prisma";
 import { type NextRequest, NextResponse } from "next/server";
@@ -12,11 +12,36 @@ export const runtime = "nodejs";
  */
 export async function DELETE(request: NextRequest) {
   try {
-    if (!isAuthorizedInternalRequest(request))
+    // SAFETY: Block this destructive endpoint in production
+    if (env.NODE_ENV === "production") {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            "Reset API is disabled in production. Use database tools directly.",
+        },
+        { status: 403 },
+      );
+    }
+
+    if (!isAuthorizedCrmInternalRequest(request))
       return NextResponse.json(
         { ok: false, error: "Unauthorized" },
         { status: 401 },
       );
+
+    // Require explicit confirmation header to prevent accidental invocations
+    const confirmHeader = request.headers.get("x-crm-reset-confirm");
+    if (confirmHeader !== "DELETE_ALL_CRM_DATA") {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            'Missing confirmation. Set header: x-crm-reset-confirm: DELETE_ALL_CRM_DATA',
+        },
+        { status: 400 },
+      );
+    }
 
     // Get all CRM workspace mappings
     const mappings = (await prisma.$queryRaw`
@@ -82,14 +107,3 @@ export async function DELETE(request: NextRequest) {
   }
 }
 
-const isAuthorizedInternalRequest = (request: NextRequest) => {
-  if (!env.CRM_BOT_INTERNAL_SECRET) return false;
-
-  const providedSecret = request.headers.get("x-crm-internal-secret");
-  if (!providedSecret) return false;
-
-  const expected = Buffer.from(env.CRM_BOT_INTERNAL_SECRET);
-  const actual = Buffer.from(providedSecret);
-
-  return actual.length === expected.length && timingSafeEqual(actual, expected);
-};

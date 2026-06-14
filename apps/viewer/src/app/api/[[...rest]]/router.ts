@@ -24,8 +24,25 @@ const healthz = publicProcedure
     method: "GET",
     path: "/healthz",
   })
-  .output(z.object({ status: z.literal("ok") }))
-  .handler(handleHealthz);
+  .input(z.object({ deep: z.string().optional() }).optional())
+  .output(
+    z.object({
+      status: z.enum(["ok", "degraded", "unhealthy"]),
+      postgres: z.enum(["connected", "error"]).optional(),
+      redis: z.enum(["connected", "disconnected", "not_configured"]).optional(),
+      uptimeSeconds: z.number().optional(),
+      processing: z.object({
+        active: z.number(),
+        queued: z.number(),
+        maxConcurrent: z.number(),
+        maxQueue: z.number(),
+      }).optional(),
+      error: z.string().optional(),
+    }),
+  )
+  .handler(async ({ input }) =>
+    handleHealthz({ deep: input?.deep === "true" }),
+  );
 
 const automationPlatformsRouter = {
   me: protectedProcedure

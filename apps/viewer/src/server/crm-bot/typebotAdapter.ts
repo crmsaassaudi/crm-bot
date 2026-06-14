@@ -3,6 +3,7 @@ import { handleStartChat } from "@typebot.io/bot-engine/api/handleStartChat";
 import type {
   BotReplyResult,
   BotReplyButton,
+  BotReplyMessage,
 } from "./types";
 
 type TypebotRuntimeResponse = Record<string, any>;
@@ -16,7 +17,16 @@ type TypebotAdapterInput = {
   text: string;
   channel: string;
   sessionId?: string | null;
+  /** Button reply ID — maps to Typebot item.id for exact choice matching */
+  replyId?: string;
 };
+
+/** Build the message payload for Typebot engine */
+const buildInputMessage = (text: string, replyId?: string) => ({
+  type: "text" as const,
+  text,
+  ...(replyId ? { metadata: { replyId } } : {}),
+});
 
 export class TypebotAdapter {
   async reply(input: TypebotAdapterInput): Promise<BotReplyResult> {
@@ -24,7 +34,7 @@ export class TypebotAdapter {
       const response = await handleContinueChat({
         input: {
           sessionId: input.sessionId,
-          message: { type: "text", text: input.text },
+          message: buildInputMessage(input.text, input.replyId),
           textBubbleContentFormat: "markdown",
         },
         context: {},
@@ -36,7 +46,7 @@ export class TypebotAdapter {
     const response = await handleStartChat({
       input: {
         publicId: input.flowId,
-        message: { type: "text", text: input.text },
+        message: buildInputMessage(input.text, input.replyId),
         isStreamEnabled: false,
         isOnlyRegistering: false,
         prefilledVariables: {
@@ -60,7 +70,10 @@ export const normalizeTypebotResponse = (
 ): BotReplyResult => {
   const messages = (response.messages ?? [])
     .map(normalizeBubble)
-    .filter((message: any) => message?.text?.trim());
+    .filter(
+      (message: BotReplyMessage | null): message is BotReplyMessage =>
+        message !== null,
+    );
 
   const buttons = extractButtons(response.input);
   if (buttons.length > 0 && messages.length > 0) {
@@ -82,19 +95,97 @@ export const normalizeTypebotResponse = (
   };
 };
 
-const normalizeBubble = (bubble: any) => {
-  if (bubble?.type !== "text") return null;
+/**
+ * Normalizes a Typebot bubble into a BotReplyMessage.
+ * Supports text, image, video, audio, and file bubble types.
+ */
+const normalizeBubble = (bubble: any): BotReplyMessage | null => {
+  if (!bubble?.type) return null;
 
-  const text =
-    bubble.content?.type === "markdown"
-      ? bubble.content.markdown
-      : extractTextFromRichText(bubble.content?.richText);
+  const bubbleType = String(bubble.type).toLowerCase();
 
-  return {
-    type: "text" as const,
-    text: text.trim(),
-    raw: bubble,
-  };
+  switch (bubbleType) {
+    case "text": {
+      const text =
+        bubble.content?.type === "markdown"
+          ? bubble.content.markdown
+          : extractTextFromRichText(bubble.content?.richText);
+
+      if (!text?.trim()) return null;
+
+      return {
+        type: "text" as const,
+        text: text.trim(),
+        raw: bubble,
+      };
+    }
+
+    case "image": {
+      const url = bubble.content?.url;
+      if (!url) return null;
+
+      return {
+        type: "image" as const,
+        url,
+        text: bubble.content?.clickLink?.alt || undefined,
+        mimeType: guessMimeType(url, "image"),
+        raw: bubble,
+      };
+    }
+
+    case "video": {
+      const url = bubble.content?.url;
+      if (!url) return null;
+
+      return {
+        type: "video" as const,
+        url,
+        mimeType: guessMimeType(url, "video"),
+        raw: bubble,
+      };
+    }
+
+    case "audio": {
+      const url = bubble.content?.url;
+      if (!url) return null;
+
+      return {
+        type: "audio" as const,
+        url,
+        mimeType: guessMimeType(url, "audio"),
+        raw: bubble,
+      };
+    }
+
+    case "file": {
+      const url = bubble.content?.url;
+      if (!url) return null;
+
+      return {
+        type: "file" as const,
+        url,
+        text: bubble.content?.name || undefined,
+        mimeType: bubble.content?.mimeType || undefined,
+        raw: bubble,
+      };
+    }
+
+    case "embed": {
+      // Embeds (iframe URLs etc.) are not directly sendable via CRM channels.
+      // Log a warning and skip.
+      console.warn(
+        `[TypebotAdapter] Skipping unsupported bubble type "embed". URL: ${bubble.content?.url}`,
+      );
+      return null;
+    }
+
+    default: {
+      console.warn(
+        `[TypebotAdapter] Unknown bubble type "${bubble.type}" — skipping`,
+      );
+      return null;
+    }
+  }
 };
 
 const extractButtons = (input: any): BotReplyButton[] => {
@@ -157,4 +248,50 @@ const containsHandoffSignal = (value: unknown): boolean => {
   };
 
   return visit(value, 0);
+};
+
+/**
+ * Best-effort MIME type guess from URL extension.
+ * Falls back to generic type-based default.
+ */
+const guessMimeType = (
+  url: string,
+  category: "image" | "video" | "audio",
+): string | undefined => {
+  try {
+    const pathname = new URL(url).pathname.toLowerCase();
+    const ext = pathname.split(".").pop();
+
+    const mimeMap: Record<string, string> = {
+      // Images
+      jpg: "image/jpeg",
+      jpeg: "image/jpeg",
+      png: "image/png",
+      gif: "image/gif",
+      webp: "image/webp",
+      svg: "image/svg+xml",
+      // Videos
+      mp4: "video/mp4",
+      webm: "video/webm",
+      mov: "video/quicktime",
+      // Audio
+      mp3: "audio/mpeg",
+      ogg: "audio/ogg",
+      wav: "audio/wav",
+      m4a: "audio/mp4",
+    };
+
+    if (ext && mimeMap[ext]) return mimeMap[ext];
+  } catch {
+    // URL parsing failed — ignore
+  }
+
+  // Default fallback by category
+  const defaults: Record<string, string> = {
+    image: "image/jpeg",
+    video: "video/mp4",
+    audio: "audio/mpeg",
+  };
+
+  return defaults[category];
 };

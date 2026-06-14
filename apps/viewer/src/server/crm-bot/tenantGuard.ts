@@ -3,6 +3,10 @@ import {
   getCrmWorkspaceMappingByTenantId,
   isCrmSsoLockdownEnabled,
 } from "@typebot.io/workspaces/crmTenantWorkspaceMapping";
+import {
+  getCachedTenantMapping,
+  setCachedTenantMapping,
+} from "./flowCache";
 
 /**
  * Validates that a Typebot flow (identified by publicId) belongs to the
@@ -34,8 +38,8 @@ export const assertFlowBelongsToTenant = async (
     );
   }
 
-  // 2. Find the CRM tenant → workspace mapping
-  const mapping = await getCrmWorkspaceMappingByTenantId(tenantId);
+  // 2. Find the CRM tenant → workspace mapping (cached)
+  const mapping = await getCachedOrFetchTenantMapping(tenantId);
   if (!mapping) {
     throw new TenantGuardError(
       `No workspace mapping for tenant ${tenantId}`,
@@ -69,6 +73,22 @@ export const assertSessionBelongsToTenant = async (
   // - continue-chat requires exact sessionId match
   // - no enumeration attack possible
   // Therefore we skip explicit DB validation for continue calls.
+};
+
+/**
+ * Looks up the CRM tenant→workspace mapping, checking Redis cache first
+ * (TTL 300s). Falls through to DB on cache miss.
+ */
+const getCachedOrFetchTenantMapping = async (tenantId: string) => {
+  const cached = await getCachedTenantMapping(tenantId);
+  if (cached.hit) return cached.mapping;
+
+  const mapping = await getCrmWorkspaceMappingByTenantId(tenantId);
+
+  // Cache the result (including null)
+  await setCachedTenantMapping(tenantId, mapping);
+
+  return mapping;
 };
 
 export class TenantGuardError extends Error {

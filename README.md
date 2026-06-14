@@ -1,5 +1,7 @@
 # crm-bot — Visual Automation Builder (Typebot Fork)
 
+> **Last updated:** 2026-06-14
+>
 > **Base:** Typebot v3.16.1 (Fair Source) · **Stack:** Next.js · TypeScript · Prisma · Bun
 
 ---

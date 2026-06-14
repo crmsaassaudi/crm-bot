@@ -8,17 +8,21 @@ type BeginResult =
   | { status: "duplicate"; cached?: BotReplyResult };
 
 export class BotReplyIdempotencyStore {
-  async begin(inboundMessageId: string): Promise<BeginResult> {
+  /**
+   * Begin idempotency check for a bot reply request.
+   * Keys are scoped by tenant (org) to prevent cross-tenant collisions.
+   */
+  async begin(org: string, inboundMessageId: string): Promise<BeginResult> {
     this.assertRedis();
 
-    const responseKey = this.responseKey(inboundMessageId);
+    const responseKey = this.responseKey(org, inboundMessageId);
     const cached = await redis!.get(responseKey);
     if (cached) {
       return { status: "duplicate", cached: JSON.parse(cached) };
     }
 
     const acquired = await redis!.set(
-      this.processingKey(inboundMessageId),
+      this.processingKey(org, inboundMessageId),
       "processing",
       "EX",
       IDEMPOTENCY_TTL_SECONDS,
@@ -35,6 +39,7 @@ export class BotReplyIdempotencyStore {
   }
 
   async complete(
+    org: string,
     inboundMessageId: string,
     response: BotReplyResult,
   ): Promise<void> {
@@ -43,13 +48,13 @@ export class BotReplyIdempotencyStore {
     await redis!
       .multi()
       .set(
-        this.responseKey(inboundMessageId),
+        this.responseKey(org, inboundMessageId),
         JSON.stringify(response),
         "EX",
         IDEMPOTENCY_TTL_SECONDS,
       )
       .set(
-        this.processingKey(inboundMessageId),
+        this.processingKey(org, inboundMessageId),
         "done",
         "EX",
         IDEMPOTENCY_TTL_SECONDS,
@@ -57,17 +62,22 @@ export class BotReplyIdempotencyStore {
       .exec();
   }
 
-  async fail(inboundMessageId: string): Promise<void> {
+  async fail(org: string, inboundMessageId: string): Promise<void> {
     this.assertRedis();
-    await redis!.del(this.processingKey(inboundMessageId));
+    await redis!.del(this.processingKey(org, inboundMessageId));
   }
 
-  private processingKey(inboundMessageId: string): string {
-    return `idempotency:bot_reply:${inboundMessageId}`;
+  /**
+   * Redis key for tracking processing state.
+   * Scoped by org (tenantId) to ensure tenant isolation — prevents
+   * cross-tenant collisions if two tenants happen to share a messageId.
+   */
+  private processingKey(org: string, inboundMessageId: string): string {
+    return `crm-bot:idempotency:${org}:${inboundMessageId}`;
   }
 
-  private responseKey(inboundMessageId: string): string {
-    return `${this.processingKey(inboundMessageId)}:response`;
+  private responseKey(org: string, inboundMessageId: string): string {
+    return `${this.processingKey(org, inboundMessageId)}:response`;
   }
 
   private assertRedis(): void {

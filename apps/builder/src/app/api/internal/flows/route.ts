@@ -1,4 +1,4 @@
-import { timingSafeEqual } from "node:crypto";
+import { isAuthorizedCrmInternalRequest } from "@typebot.io/auth/helpers/isAuthorizedCrmInternalRequest";
 import { env } from "@typebot.io/env";
 import prisma from "@typebot.io/prisma";
 import { getCrmWorkspaceMappingByTenantId } from "@typebot.io/workspaces/crmTenantWorkspaceMapping";
@@ -21,7 +21,7 @@ const querySchema = z.object({
  */
 export async function GET(request: NextRequest) {
   try {
-    if (!isAuthorizedInternalRequest(request))
+    if (!isAuthorizedCrmInternalRequest(request))
       return NextResponse.json(
         { ok: false, error: "Unauthorized" },
         { status: 401 },
@@ -91,14 +91,3 @@ export async function GET(request: NextRequest) {
   }
 }
 
-const isAuthorizedInternalRequest = (request: NextRequest) => {
-  if (!env.CRM_BOT_INTERNAL_SECRET) return false;
-
-  const providedSecret = request.headers.get("x-crm-internal-secret");
-  if (!providedSecret) return false;
-
-  const expected = Buffer.from(env.CRM_BOT_INTERNAL_SECRET);
-  const actual = Buffer.from(providedSecret);
-
-  return actual.length === expected.length && timingSafeEqual(actual, expected);
-};
