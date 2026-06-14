@@ -1,0 +1,123 @@
+name: Deploy CRM Bot
+
+# Auto-deploy crm-bot (Typebot fork) to Node C of the load-test env.
+# Mirrors crm-api's deploy flow, but pushes source via rsync from the runner
+# instead of git-pull-on-VPS (Node C deploy dir is not a git repo, and .env.prod
+# lives only on the node). Build runs ON Node C (sequential, to limit RAM peak).
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/workflows/**'
+      - '!.github/workflows/deploy.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: crm-bot-production
+  cancel-in-progress: false # don't cancel a build mid-flight — Node C builds are long
+
+jobs:
+  deploy:
+    name: Rsync source and build on Node C
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Sync source to Node C
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
+          VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          VPS_SSH_PORT: ${{ secrets.VPS_SSH_PORT || '22' }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          set -e
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VPS_SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p "$VPS_SSH_PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+          # --delete keeps Node C in sync with the repo, but excludes protect
+          # node-only secrets (.env.prod) and build artifacts from being deleted.
+          rsync -az --delete \
+            -e "ssh -i ~/.ssh/deploy_key -p $VPS_SSH_PORT -o StrictHostKeyChecking=accept-new" \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='**/node_modules' \
+            --exclude='.next' \
+            --exclude='**/.next' \
+            --exclude='.nx' \
+            --exclude='.turbo' \
+            --exclude='.tanstack' \
+            --exclude='dist' \
+            --exclude='**/dist' \
+            --exclude='.env' \
+            --exclude='.env.prod' \
+            --exclude='.env.dev' \
+            ./ "$VPS_USERNAME@$VPS_HOST:$DEPLOY_PATH/"
+
+      - name: Build and deploy over SSH
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          port: ${{ secrets.VPS_SSH_PORT || '22' }}
+          command_timeout: 60m
+          script: |
+            set -e
+            cd "${{ secrets.DEPLOY_PATH }}"
+
+            # .env.prod must already exist on the node (chmod 600, never in repo).
+            test -f .env.prod
+
+            COMPOSE="docker compose -f docker-compose.prod.yml --env-file .env.prod"
+
+            # Datastores: ensure up (no rebuild). createbuckets is idempotent.
+            $COMPOSE up -d crm-bot-db crm-bot-redis crm-bot-minio crm-bot-createbuckets
+
+            # ── Build app images SEQUENTIALLY to cap RAM peak on Node C ──────
+            # builder/viewer Next.js builds are ~6GB images; parallel build risks OOM.
+            echo "::group::build builder"
+            $COMPOSE build crm-bot-builder
+            echo "::endgroup::"
+            echo "::group::build viewer"
+            $COMPOSE build crm-bot-viewer
+            echo "::endgroup::"
+            echo "::group::build workflows"
+            $COMPOSE build crm-bot-workflows
+            echo "::endgroup::"
+
+            # ── Recreate app containers with the new images ──────────────────
+            # builder entrypoint runs `prisma migrate deploy` on start.
+            $COMPOSE up -d --no-build --remove-orphans \
+              crm-bot-builder crm-bot-viewer crm-bot-workflows
+
+            # ── Health check: viewer must respond (root 404 is normal/healthy) ─
+            echo "Waiting for viewer to respond..."
+            for i in $(seq 1 24); do
+              code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://10.104.0.4:4203/ || echo 000)
+              if [ "$code" != "000" ]; then
+                echo "Viewer responding (HTTP $code) on attempt $i"
+                break
+              fi
+              if [ "$i" -eq 24 ]; then
+                echo "Viewer did not respond after 120s"
+                $COMPOSE logs --tail=80 crm-bot-viewer
+                exit 1
+              fi
+              echo "Waiting for viewer... (attempt $i/24)"
+              sleep 5
+            done
+
+            echo "── Service status ──"
+            $COMPOSE ps
+
+            # ── Cleanup dangling images from the rebuild ─────────────────────
+            docker image prune -f
