@@ -84,8 +84,17 @@ export const normalizeTypebotResponse = (
     };
   }
 
+  // Debug: log the raw response keys and logs for handoff tracing
+  const resLogs = Array.isArray(response.logs) ? response.logs : [];
+  console.log(`[HANDOFF-DEBUG] response keys: ${Object.keys(response).join(", ")}`);
+  console.log(`[HANDOFF-DEBUG] logs count: ${resLogs.length}`);
+  for (const log of resLogs) {
+    console.log(`[HANDOFF-DEBUG] log entry:`, JSON.stringify(log));
+  }
+
   const handoffMeta = extractHandoffMeta(response);
   const handoff = handoffMeta !== null;
+  console.log(`[HANDOFF-DEBUG] handoffMeta: ${JSON.stringify(handoffMeta)}, handoff: ${handoff}`);
   const ended = !handoff && response.progress === 100 && !response.input;
 
   return {
