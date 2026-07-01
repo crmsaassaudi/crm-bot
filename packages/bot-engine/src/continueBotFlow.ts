@@ -217,8 +217,6 @@ export const continueBotFlow = async (
     sessionStore,
   });
 
-  console.log(`[CONTINUE-FLOW] currentBlock type="${block.type}" id="${block.id}", nextEdge=${JSON.stringify(nextEdge)}, groupHasMoreBlocks=${blockIndex < group.blocks.length - 1}`);
-
   const content =
     continueReply && "content" in continueReply
       ? continueReply.content
@@ -234,7 +232,6 @@ export const continueBotFlow = async (
     (newSessionState.typebotsQueue[0].queuedEdgeIds ?? []).length === 0 &&
     newSessionState.typebotsQueue.length === 1
   ) {
-    console.log(`[CONTINUE-FLOW] ⏹ No next edge, no more blocks — flow ends`);
     return {
       messages: [],
       newSessionState,
@@ -258,7 +255,6 @@ export const continueBotFlow = async (
           nextEdge,
         };
 
-  console.log(`[CONTINUE-FLOW] walkStartingPoint type="${walkStartingPoint.type}"`);
 
   const executionResponse = await walkFlowForward(walkStartingPoint, {
     version,

@@ -396,16 +396,7 @@ const getTypebot = async (startParams: StartParams) => {
           ?.botClosed ?? defaultSystemMessages.botClosed,
     });
 
-  const parsed = startTypebotSchema.parse(parsedTypebot);
-
-  // Debug: dump groups and block types after Zod parse
-  console.log(`[START-SESSION] typebot loaded: id=${parsed.id}, version=${parsed.version}, groups=${parsed.groups.length}`);
-  for (const g of parsed.groups) {
-    const blockTypes = g.blocks.map((b: any) => b.type).join(", ");
-    console.log(`[START-SESSION]   group="${g.title}" id="${g.id}" blocks=[${blockTypes}]`);
-  }
-
-  return parsed;
+  return startTypebotSchema.parse(parsedTypebot);
 };
 
 const getOrInitResult = async ({

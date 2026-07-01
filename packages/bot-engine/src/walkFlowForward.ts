@@ -181,10 +181,6 @@ const executeGroup = async (
     visitedEdges,
   }: ContextProps,
 ): Promise<ExecuteGroupResponse> => {
-  // Debug: dump all blocks in this group
-  console.log(`[EXEC-GROUP] ▶ group="${group.title}" id="${group.id}" blocks=${group.blocks.length}`);
-  group.blocks.forEach((b, i) => console.log(`[EXEC-GROUP]   block[${i}] type="${b.type}" id="${b.id}"`));
-
   const messages: ContinueChatResponse["messages"] = [];
   let clientSideActions: ContinueChatResponse["clientSideActions"] = [];
   let logs: ContinueChatResponse["logs"] = [];
@@ -193,6 +189,14 @@ const executeGroup = async (
   let updatedTimeoutStartTime = timeoutStartTime;
   const newSetVariableHistoryItems: SetVariableHistoryItem[] = [];
   let newSessionState = state;
+
+  // Execution trace: log group entry with all block types
+  const blockSummary = group.blocks.map((b) => b.type).join(" → ");
+  logs = [...(logs ?? []), {
+    status: "info",
+    description: `Flow entered group with ${group.blocks.length} block(s): ${blockSummary}`,
+    context: group.title,
+  }];
 
   let index = -1;
   for (const block of group.blocks) {
@@ -225,6 +229,14 @@ const executeGroup = async (
         sessionStore,
       });
       messages.push(message);
+
+      // Execution trace: bubble message sent
+      logs = [...(logs ?? []), {
+        status: "info",
+        description: `Sent [${block.type}] message`,
+        context: group.title,
+      }];
+
       if (
         message.type === BubbleBlockType.EMBED &&
         message.content.waitForEvent?.isEnabled
@@ -246,7 +258,13 @@ const executeGroup = async (
       continue;
     }
 
-    if (isInputBlock(block))
+    if (isInputBlock(block)) {
+      // Execution trace: waiting for user input
+      logs = [...(logs ?? []), {
+        status: "info",
+        description: `Waiting for user input [${block.type}]`,
+        context: group.title,
+      }];
       return {
         messages,
         input: await formatInputForChatResponse(block, {
@@ -264,9 +282,9 @@ const executeGroup = async (
         newSetVariableHistoryItems,
         lastBubbleBlockId,
       };
+    }
     const _isLogic = isLogicBlock(block);
     const _isIntegration = isIntegrationBlock(block);
-    console.log(`[EXEC-GROUP]   classify block type="${block.type}": isLogic=${_isLogic}, isIntegration=${_isIntegration}, isBubble=false, isInput=false`);
 
     const logicOrIntegrationExecutionResponse = (
       _isLogic
@@ -287,9 +305,27 @@ const executeGroup = async (
     ) as ExecuteLogicResponse | ExecuteIntegrationResponse | null;
 
     if (!logicOrIntegrationExecutionResponse) {
-      console.log(`[EXEC-GROUP]   ⚠️ block type="${block.type}" returned null — SKIPPED`);
+      logs = [...(logs ?? []), {
+        status: "warning",
+        description: `Block [${block.type}] was skipped (not recognized as logic or integration)`,
+        context: group.title,
+        details: JSON.stringify({ blockId: block.id, blockType: block.type }),
+      }];
       continue;
     }
+
+    // Execution trace: log block execution result
+    logs = [...(logs ?? []), {
+      status: "info",
+      description: `Executed [${block.type}] block${logicOrIntegrationExecutionResponse.outgoingEdgeId ? " → continuing flow" : ""}`,
+      context: group.title,
+      details: JSON.stringify({
+        blockId: block.id,
+        blockType: block.type,
+        outgoingEdgeId: logicOrIntegrationExecutionResponse.outgoingEdgeId ?? null,
+        producedLogs: logicOrIntegrationExecutionResponse.logs?.length ?? 0,
+      }),
+    }];
     if (
       logicOrIntegrationExecutionResponse.newSetVariableHistory &&
       logicOrIntegrationExecutionResponse.newSetVariableHistory?.length > 0
@@ -325,7 +361,6 @@ const executeGroup = async (
     )
       updatedTimeoutStartTime = Date.now();
     if (logicOrIntegrationExecutionResponse.logs) {
-      console.log(`[EXEC-GROUP]   ✅ block type="${block.type}" produced ${logicOrIntegrationExecutionResponse.logs.length} logs`);
       logs = [...(logs ?? []), ...logicOrIntegrationExecutionResponse.logs];
     }
     if (logicOrIntegrationExecutionResponse.newSessionState)
