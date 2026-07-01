@@ -36,6 +36,7 @@ import { SendEmailIcon } from "@/features/blocks/integrations/sendEmail/componen
 import { ZapierLogo } from "@/features/blocks/integrations/zapier/components/ZapierLogo";
 import { AbTestIcon } from "@/features/blocks/logic/abTest/components/AbTestIcon";
 import { ConditionIcon } from "@/features/blocks/logic/condition/components/ConditionIcon";
+import { HandoffIcon } from "@/features/blocks/logic/handoff/components/HandoffIcon";
 import { JumpIcon } from "@/features/blocks/logic/jump/components/JumpIcon";
 import { RedirectIcon } from "@/features/blocks/logic/redirect/components/RedirectIcon";
 import { ReturnBlockIcon } from "@/features/blocks/logic/return/components/ReturnBlockIcon";
@@ -160,6 +161,10 @@ export const BlockIcon = ({ type, className }: BlockIconProps): JSX.Element => {
     case LogicBlockType.WEBHOOK:
       return (
         <WebhookIcon className={cn("text-purple-9 stroke-2", className)} />
+      );
+    case LogicBlockType.HANDOFF:
+      return (
+        <HandoffIcon className={cn("text-purple-9 stroke-2", className)} />
       );
     case IntegrationBlockType.GOOGLE_SHEETS:
       return <GoogleSheetsLogo className={className} />;

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { abTestBlockSchemas } from "./abTest/schema";
 import { conditionBlockSchemas } from "./condition/schema";
+import { handoffBlockSchema } from "./handoff/schema";
 import { jumpBlockSchema } from "./jump/schema";
 import { redirectBlockSchema } from "./redirect/schema";
 import { returnBlockSchema } from "./return/schema";
@@ -18,6 +19,7 @@ const logicBlockSchemas = [
   waitBlockSchema,
   jumpBlockSchema,
   returnBlockSchema,
+  handoffBlockSchema,
 ] as const;
 
 export const logicBlockV5Schema = z.discriminatedUnion("type", [

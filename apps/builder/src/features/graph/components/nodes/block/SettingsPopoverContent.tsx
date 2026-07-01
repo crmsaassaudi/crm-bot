@@ -31,6 +31,7 @@ import { PixelSettings } from "@/features/blocks/integrations/pixel/components/P
 import { SendEmailSettings } from "@/features/blocks/integrations/sendEmail/components/SendEmailSettings";
 import { ZapierSettings } from "@/features/blocks/integrations/zapier/components/ZapierSettings";
 import { AbTestSettings } from "@/features/blocks/logic/abTest/components/AbTestSettings";
+import { HandoffSettings } from "@/features/blocks/logic/handoff/components/HandoffSettings";
 import { JumpSettings } from "@/features/blocks/logic/jump/components/JumpSettings";
 import { RedirectSettings } from "@/features/blocks/logic/redirect/components/RedirectSettings";
 import { ScriptSettings } from "@/features/blocks/logic/script/components/ScriptSettings";
@@ -345,6 +346,13 @@ export const NodeSettings = ({
     }
     case LogicBlockType.CONDITION:
       return null;
+    case LogicBlockType.HANDOFF:
+      return (
+        <HandoffSettings
+          options={node.options}
+          onOptionsChange={updateOptions}
+        />
+      );
     case LogicBlockType.WEBHOOK:
       return (
         <WebhookSettings

@@ -62,6 +62,7 @@ export class BotService {
         status: result.status,
         handoff: result.handoff,
         messages: result.messages,
+        handoffMeta: result.handoffMeta,
       };
 
       await this.sendCallbackWithRetry(input.callbackUrl, callbackPayload);

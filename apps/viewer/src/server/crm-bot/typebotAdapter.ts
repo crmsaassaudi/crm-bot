@@ -4,6 +4,7 @@ import type {
   BotReplyResult,
   BotReplyButton,
   BotReplyMessage,
+  HandoffMeta,
 } from "./types";
 
 type TypebotRuntimeResponse = Record<string, any>;
@@ -83,7 +84,8 @@ export const normalizeTypebotResponse = (
     };
   }
 
-  const handoff = containsHandoffSignal(response);
+  const handoffMeta = extractHandoffMeta(response);
+  const handoff = handoffMeta !== null;
   const ended = !handoff && response.progress === 100 && !response.input;
 
   return {
@@ -92,6 +94,7 @@ export const normalizeTypebotResponse = (
     messages,
     handoff,
     status: handoff ? "handoff" : ended ? "ended" : "active",
+    handoffMeta: handoffMeta ?? undefined,
   };
 };
 
@@ -220,34 +223,46 @@ const extractTextFromRichText = (value: unknown): string => {
   return `${ownText}${childrenText}`;
 };
 
-const containsHandoffSignal = (value: unknown): boolean => {
-  const seen = new WeakSet<object>();
+/**
+ * Extracts structured handoff metadata from the Typebot engine response.
+ *
+ * Detection strategy:
+ *   1. Look for logs with description starting with "Handoff block executed"
+ *      (produced by executeHandoff.ts). Parse the JSON `details` field.
+ *
+ * Returns null if no handoff signal is found.
+ */
+const extractHandoffMeta = (response: unknown): HandoffMeta | null => {
+  if (!response || typeof response !== "object") return null;
+  const res = response as Record<string, any>;
 
-  const visit = (current: unknown, depth: number): boolean => {
-    if (depth > 8 || current === null || current === undefined) return false;
-    if (typeof current === "string") {
-      return current.toLowerCase() === "handoff_to_agent";
-    }
-    if (typeof current !== "object") return false;
-    if (seen.has(current)) return false;
-    seen.add(current);
-
-    for (const [key, nested] of Object.entries(current)) {
-      const normalizedKey = key.toLowerCase();
-      if (
-        (normalizedKey === "handoff" && nested === true) ||
-        (normalizedKey === "event" && nested === "handoff_to_agent") ||
-        (normalizedKey === "eventname" && nested === "handoff_to_agent") ||
-        visit(nested, depth + 1)
-      ) {
-        return true;
+  // Strategy: detect from bot-engine logs emitted by the Handoff block
+  const logs: unknown[] = Array.isArray(res.logs) ? res.logs : [];
+  for (const log of logs) {
+    if (!log || typeof log !== "object") continue;
+    const entry = log as Record<string, any>;
+    if (
+      typeof entry.description === "string" &&
+      entry.description.startsWith("Handoff block executed")
+    ) {
+      try {
+        const details =
+          typeof entry.details === "string"
+            ? JSON.parse(entry.details)
+            : entry.details;
+        return {
+          target: details?.target ?? "general",
+          groupId: details?.groupId,
+          agentId: details?.agentId,
+          message: details?.message,
+        };
+      } catch {
+        return { target: "general" };
       }
     }
+  }
 
-    return false;
-  };
-
-  return visit(value, 0);
+  return null;
 };
 
 /**

@@ -1,5 +1,12 @@
 import { z } from "zod";
 
+export type HandoffMeta = {
+  target: "general" | "group" | "agent";
+  groupId?: string;
+  agentId?: string;
+  message?: string;
+};
+
 export const botReplyRequestSchema = z.object({
   org: z.string().min(1),
   conversationId: z.string().min(1),
@@ -51,6 +58,7 @@ export type BotReplyResult = {
   status: "active" | "handoff" | "ended";
   handoff: boolean;
   messages: BotReplyMessage[];
+  handoffMeta?: HandoffMeta;
 };
 
 /** Callback payload sent from bot to crm-api */
@@ -62,4 +70,5 @@ export type BotCallbackPayload = {
   status: "active" | "handoff" | "ended";
   handoff: boolean;
   messages: BotReplyMessage[];
+  handoffMeta?: HandoffMeta;
 };

@@ -6,6 +6,7 @@ import type { SessionStore } from "@typebot.io/runtime-session-store";
 import type { SetVariableHistoryItem } from "@typebot.io/variables/schemas";
 import { executeAbTest } from "./blocks/logic/abTest/executeAbTest";
 import { executeConditionBlock } from "./blocks/logic/condition/executeConditionBlock";
+import { executeHandoff } from "./blocks/logic/handoff/executeHandoff";
 import { executeJumpBlock } from "./blocks/logic/jump/executeJumpBlock";
 import { executeRedirect } from "./blocks/logic/redirect/executeRedirect";
 import { executeReturnBlock } from "./blocks/logic/return/executeReturnBlock";
@@ -55,5 +56,7 @@ export const executeLogic = async ({
       return executeWebhookBlock(block);
     case LogicBlockType.RETURN:
       return executeReturnBlock(state);
+    case LogicBlockType.HANDOFF:
+      return executeHandoff(block, { state, sessionStore });
   }
 };
