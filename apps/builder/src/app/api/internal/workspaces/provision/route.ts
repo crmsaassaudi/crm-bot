@@ -1,6 +1,4 @@
 import { isAuthorizedCrmInternalRequest } from "@typebot.io/auth/helpers/isAuthorizedCrmInternalRequest";
-import { env } from "@typebot.io/env";
-import prisma from "@typebot.io/prisma";
 import { provisionCrmTenantWorkspace } from "@typebot.io/workspaces/crmTenantWorkspaceMapping";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
