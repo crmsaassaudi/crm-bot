@@ -181,6 +181,10 @@ const executeGroup = async (
     visitedEdges,
   }: ContextProps,
 ): Promise<ExecuteGroupResponse> => {
+  // Debug: dump all blocks in this group
+  console.log(`[EXEC-GROUP] ▶ group="${group.title}" id="${group.id}" blocks=${group.blocks.length}`);
+  group.blocks.forEach((b, i) => console.log(`[EXEC-GROUP]   block[${i}] type="${b.type}" id="${b.id}"`));
+
   const messages: ContinueChatResponse["messages"] = [];
   let clientSideActions: ContinueChatResponse["clientSideActions"] = [];
   let logs: ContinueChatResponse["logs"] = [];
@@ -203,8 +207,7 @@ const executeGroup = async (
     }
 
     index++;
-    // Debug: trace every block being processed
-    console.log(`[EXEC-GROUP] group="${group.title}" block[${index}] type="${block.type}" id="${block.id}"`);
+    
     nextEdge = block.outgoingEdgeId
       ? {
           id: block.outgoingEdgeId,
@@ -261,8 +264,12 @@ const executeGroup = async (
         newSetVariableHistoryItems,
         lastBubbleBlockId,
       };
+    const _isLogic = isLogicBlock(block);
+    const _isIntegration = isIntegrationBlock(block);
+    console.log(`[EXEC-GROUP]   classify block type="${block.type}": isLogic=${_isLogic}, isIntegration=${_isIntegration}, isBubble=false, isInput=false`);
+
     const logicOrIntegrationExecutionResponse = (
-      isLogicBlock(block)
+      _isLogic
         ? await executeLogic({
             block,
             state: newSessionState,
@@ -270,7 +277,7 @@ const executeGroup = async (
             visitedEdges,
             sessionStore,
           })
-        : isIntegrationBlock(block)
+        : _isIntegration
           ? await executeIntegration({
               block,
               state: newSessionState,
@@ -279,7 +286,10 @@ const executeGroup = async (
           : null
     ) as ExecuteLogicResponse | ExecuteIntegrationResponse | null;
 
-    if (!logicOrIntegrationExecutionResponse) continue;
+    if (!logicOrIntegrationExecutionResponse) {
+      console.log(`[EXEC-GROUP]   ⚠️ block type="${block.type}" returned null — SKIPPED`);
+      continue;
+    }
     if (
       logicOrIntegrationExecutionResponse.newSetVariableHistory &&
       logicOrIntegrationExecutionResponse.newSetVariableHistory?.length > 0
@@ -314,8 +324,10 @@ const executeGroup = async (
       logicOrIntegrationExecutionResponse.startTimeShouldBeUpdated
     )
       updatedTimeoutStartTime = Date.now();
-    if (logicOrIntegrationExecutionResponse.logs)
+    if (logicOrIntegrationExecutionResponse.logs) {
+      console.log(`[EXEC-GROUP]   ✅ block type="${block.type}" produced ${logicOrIntegrationExecutionResponse.logs.length} logs`);
       logs = [...(logs ?? []), ...logicOrIntegrationExecutionResponse.logs];
+    }
     if (logicOrIntegrationExecutionResponse.newSessionState)
       newSessionState = logicOrIntegrationExecutionResponse.newSessionState;
     if (

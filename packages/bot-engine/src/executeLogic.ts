@@ -30,6 +30,7 @@ export const executeLogic = async ({
   sessionStore: SessionStore;
   visitedEdges: Prisma.VisitedEdge[];
 }): Promise<ExecuteLogicResponse> => {
+  console.log(`[EXEC-LOGIC] executing block type="${block.type}" id="${block.id}"`);
   switch (block.type) {
     case LogicBlockType.SET_VARIABLE:
       return executeSetVariable(block, {
@@ -56,7 +57,11 @@ export const executeLogic = async ({
       return executeWebhookBlock(block);
     case LogicBlockType.RETURN:
       return executeReturnBlock(state);
-    case LogicBlockType.HANDOFF:
-      return executeHandoff(block, { state, sessionStore });
+    case LogicBlockType.HANDOFF: {
+      console.log(`[EXEC-LOGIC] ✅ HANDOFF case matched! Calling executeHandoff...`);
+      const result = executeHandoff(block, { state, sessionStore });
+      console.log(`[EXEC-LOGIC] executeHandoff returned: logs=${result.logs?.length ?? 0}, outgoingEdgeId=${result.outgoingEdgeId}`);
+      return result;
+    }
   }
 };
