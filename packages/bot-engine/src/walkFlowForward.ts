@@ -203,6 +203,8 @@ const executeGroup = async (
     }
 
     index++;
+    // Debug: trace every block being processed
+    console.log(`[EXEC-GROUP] group="${group.title}" block[${index}] type="${block.type}" id="${block.id}"`);
     nextEdge = block.outgoingEdgeId
       ? {
           id: block.outgoingEdgeId,
