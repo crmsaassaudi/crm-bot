@@ -1,14 +1,7 @@
+import { Icon } from "@typebot.io/ui/components/Icon";
+
 export const HandoffIcon = ({ className }: { className?: string }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={className}
-  >
+  <Icon className={className}>
     {/* Person silhouette */}
     <circle cx="9" cy="7" r="3" />
     <path d="M9 13c-4 0-6 2-6 4v1h12v-1c0-2-2-4-6-4z" />
@@ -18,5 +11,5 @@ export const HandoffIcon = ({ className }: { className?: string }) => (
     {/* Agent headset */}
     <path d="M19 4a3 3 0 0 1 3 3v1" />
     <circle cx="22" cy="9" r="1" />
-  </svg>
+  </Icon>
 );
