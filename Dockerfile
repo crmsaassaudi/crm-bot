@@ -24,6 +24,7 @@ WORKDIR /app
 
 FROM base AS builder
 ARG SCOPE
+ENV HUSKY=0
 COPY . .
 RUN SENTRYCLI_SKIP_DOWNLOAD=1 bun install --frozen-lockfile
 # Apply nx sync generators (tsconfig project references) before build — nx errors on an
