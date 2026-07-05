@@ -847,11 +847,11 @@ const generateWorkspaceSummary = async () => {
     );
     // get ai summary
     const ai_summary = await getTypebotAISummary(typebot_summary_string);
-    Object.assign(typebot_summary_json, ai_summary);
+    const enriched_summary = { ...typebot_summary_json, ...ai_summary };
     // update typebot in the list
-    delete typebot_summary_json.groups; // no need for groups data
+    delete enriched_summary.groups; // no need for groups data
     const typebot_index = typebots_list.findIndex((tb) => tb.id === typebot.id);
-    Object.assign(typebots_list[typebot_index], typebot_summary_json);
+    typebots_list[typebot_index] = { ...typebots_list[typebot_index], ...enriched_summary };
   }
 
   // count number of typebots per category
@@ -900,12 +900,12 @@ const generateWorkspaceSummary = async () => {
   const workspaceSummary = JSON.stringify(summary, null, 2);
   const ai_analysis = await getWorkspaceAISummary(workspaceSummary);
 
-  Object.assign(summary, { ai_analysis: ai_analysis });
+  const finalSummary = { ...summary, ai_analysis };
 
   // save to file
   saveToFile(
     `${workspaceId}/workspaceSummary.json`,
-    JSON.stringify(summary, null, 2),
+    JSON.stringify(finalSummary, null, 2),
   );
   console.log(
     "Workspace summary saved to:",
@@ -913,7 +913,7 @@ const generateWorkspaceSummary = async () => {
   );
 
   // save to readable markdown file
-  const readable_summary = toReadableFormat(summary);
+  const readable_summary = toReadableFormat(finalSummary);
   saveToFile(`${workspaceId}/summary.md`, readable_summary);
   console.log(
     "Readable workspace summary saved to:",

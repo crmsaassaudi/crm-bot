@@ -6,7 +6,7 @@ export default function Page() {
 
   useEffect(() => {
     if (!query.code) return;
-    window.opener.postMessage({ type: "oauth", code: query.code }, "*");
+    window.opener.postMessage({ type: "oauth", code: query.code }, window.location.origin);
     window.close();
   }, [query]);
 

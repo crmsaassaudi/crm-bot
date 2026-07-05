@@ -12,7 +12,7 @@ const removeObjectsRecursively = async (prefix: string) => {
     try {
       await minioClient.removeObject(bucketName, obj.name);
     } catch (err) {
-      console.error(`Error removing ${obj.name}:`, err);
+      console.error("Error removing S3 object:", obj.name, err);
     }
   }
 };

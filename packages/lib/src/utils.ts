@@ -146,6 +146,10 @@ export const getAtPath = <T>(obj: T, path: string): unknown => {
     if (current === undefined) {
       return;
     }
+    // Prevent prototype pollution
+    if (part === "__proto__" || part === "constructor" || part === "prototype") {
+      return;
+    }
     current = current[part];
   }
   return current;

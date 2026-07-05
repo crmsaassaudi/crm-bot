@@ -177,8 +177,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Extract body from changelog
+        env:
+          GIT_REF: ${{ github.ref }}
         run: |
-          NEW_VERSION=$(echo '${{ github.ref }}' | sed 's/refs\/tags\/v//')
+          NEW_VERSION=$(echo "$GIT_REF" | sed 's/refs\/tags\/v//')
           echo $NEW_VERSION
           sed -n -e "/## ${NEW_VERSION}/,/<a/ p" ./CHANGELOG.md | sed -e '1,2d' | sed -e '$d' | sed -e '$d' > extractedBody.md
       - name: Create Release

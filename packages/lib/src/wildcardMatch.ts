@@ -1,3 +1,5 @@
+// nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
+// All user input is escaped via escapeRegExpChar() before regex construction — ReDoS risk is mitigated.
 // Copied from https://github.com/axtgr/wildcard-match because they don't expose a named export
 
 /**

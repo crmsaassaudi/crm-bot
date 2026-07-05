@@ -23,6 +23,15 @@ export const EmbedBubble = (props: Props) => {
   const handleMessage = (
     event: MessageEvent<{ name?: string; data?: string }>,
   ) => {
+    // Validate origin against the embedded URL to prevent cross-origin attacks
+    if (props.content?.url) {
+      try {
+        const expectedOrigin = new URL(props.content.url).origin;
+        if (event.origin !== expectedOrigin) return;
+      } catch {
+        return;
+      }
+    }
     if (
       props.content?.waitForEvent?.isEnabled &&
       isNotEmpty(event.data.name) &&

@@ -75,6 +75,7 @@ export const computeRiskLevel = async (
   });
   if (
     env.RADAR_HIGH_RISK_KEYWORDS?.some((keyword) =>
+      // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp — server-controlled env keywords
       new RegExp(
         `(?<!(https?://|@)[^\\s"]*)\\b${keyword}${
           keyword.includes("$") ? "" : "\\b"
@@ -87,6 +88,7 @@ export const computeRiskLevel = async (
       console.log(
         "High risk keywords detected:",
         env.RADAR_HIGH_RISK_KEYWORDS?.find((keyword) =>
+          // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
           new RegExp(
             `(?<!(https?://|@)[^\\s"]*)\\b${keyword}${
               keyword.includes("$") ? "" : "\\b"
@@ -103,6 +105,7 @@ export const computeRiskLevel = async (
     env.RADAR_CUMULATIVE_KEYWORDS?.some((set) =>
       set.every((keyword) =>
         keyword.some((k) =>
+          // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp — server-controlled env keywords
           new RegExp(
             `(?<!(https?://|@)[^\\s"]*)\\b${k}${k.includes("$") ? "" : "\\b"}`,
             "gi",
@@ -117,6 +120,7 @@ export const computeRiskLevel = async (
         env.RADAR_CUMULATIVE_KEYWORDS?.find((set) =>
           set.every((keyword) =>
             keyword.some((k) =>
+              // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
               new RegExp(
                 `(?<!(https?://|@)[^\\s"]*)\\b${k}${
                   k.includes("$") ? "" : "\\b"

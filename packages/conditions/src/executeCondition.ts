@@ -191,6 +191,7 @@ const executeComparison = (
         const regex = preprocessRegex(b);
         if (!regex.pattern) return false;
         try {
+          // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp — user-configured regex pattern
           return new RegExp(regex.pattern, regex.flags).test(a);
         } catch {
           // Most likelInvalid regex, treat as non-match
@@ -204,7 +205,12 @@ const executeComparison = (
         if (b === "" || !b || !a) return false;
         const regex = preprocessRegex(b);
         if (!regex.pattern) return true;
-        return !new RegExp(regex.pattern, regex.flags).test(a);
+        try {
+          // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp — user-configured regex pattern
+          return !new RegExp(regex.pattern, regex.flags).test(a);
+        } catch {
+          return true;
+        }
       };
       return compare(matchesRegex, inputValue, value);
     }

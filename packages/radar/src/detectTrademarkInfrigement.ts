@@ -10,6 +10,7 @@ export const detectTrademarkInfrigement = (
   )
     return;
   const keywordDetected = env.TRADEMARK_VIOLATION_KEYWORDS.find((keyword) => {
+    // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp — server-controlled env keywords
     const regex = new RegExp(keyword, "i");
     if (metadata.title) {
       if (regex.test(metadata.title)) return keyword;

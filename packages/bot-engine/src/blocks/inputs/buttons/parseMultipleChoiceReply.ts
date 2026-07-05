@@ -93,5 +93,6 @@ const includesWholePhrase = (text: string, phrase: string) => {
   // (^|boundary)  inner  (?=$|boundary)
   const pattern = `(?:^|${boundary})${inner}(?=$|${boundary})`;
 
+  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp — phrase is escaped above
   return new RegExp(pattern, "ui").test(text);
 };

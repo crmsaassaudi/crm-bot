@@ -51,7 +51,7 @@ const migrateSubscriptionItemPriceId = async () => {
   for (const workspace of workspacesWithPaidPlan) {
     i += 1;
     console.log(
-      `(${i} / ${workspacesWithPaidPlan.length})`,
+      "Progress:", `(${i} / ${workspacesWithPaidPlan.length})`,
       "Migrating workspace:",
       workspace.id,
       workspace.name,

@@ -12,6 +12,7 @@ export const decryptV1 = (encryptedData: string, auth: string): object => {
     algorithm,
     secretKey,
     new Uint8Array(Buffer.from(iv, "hex")),
+    { authTagLength: 16 },
   );
   decipher.setAuthTag(new Uint8Array(Buffer.from(tag, "hex")));
   return JSON.parse(
