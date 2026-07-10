@@ -1,8 +1,8 @@
-# Production stack for crm-bot on Node C (DigitalOcean load-test env, 10.104.0.4).
+# Production stack for crm-bot on Node C (DigitalOcean load-test env, 10.104.0.3).
 # Run with:  docker compose -f docker-compose.prod.yml --env-file .env.prod <cmd>
 #
 # Self-contained: own Postgres + Redis + MinIO. App ports published on the VPC IP
-# (10.104.0.4) so Node A (crm-api) reaches the viewer; public access goes via nginx 443.
+# (10.104.0.3) so Node A (crm-api) reaches the viewer; public access goes via nginx 443.
 # Build builder/viewer from the root Dockerfile (ARG SCOPE); workflows from its own Dockerfile.
 
 x-app-common: &app-common
@@ -76,7 +76,7 @@ services:
       crm-bot-db:
         condition: service_healthy
     ports:
-      - "10.104.0.4:4202:3000"
+      - "10.104.0.3:4202:3000"
 
   crm-bot-viewer:
     <<: *app-common
@@ -88,7 +88,7 @@ services:
       crm-bot-db:
         condition: service_healthy
     ports:
-      - "10.104.0.4:4203:3000"
+      - "10.104.0.3:4203:3000"
 
   crm-bot-workflows:
     <<: *app-common
@@ -99,7 +99,7 @@ services:
       crm-bot-db:
         condition: service_healthy
     ports:
-      - "10.104.0.4:3002:3000"
+      - "10.104.0.3:3002:3000"
 
 networks:
   crm_bot_net:
