@@ -1,6 +1,5 @@
 node_modules
 .next
-.env.local
 workspace.code-workspace
 .DS_Store
 .idea
@@ -17,11 +16,6 @@ test/report
 .cache-loader
 build
 firebaseServiceAccount.json
-
-.env.production
-.env.prod
-.env.staging
-.env.development
 
 # Wordpress
 .svn
@@ -40,6 +34,8 @@ typebotsToFix.json
 snapshots
 
 .env
+.env.*
+!.env.example
 .typebot-build
 
 .tolgee
@@ -47,8 +43,6 @@ snapshots
 *.tsbuildinfo
 
 .tsup
-
-.env.docker
 
 .partykit
 

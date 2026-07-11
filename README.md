@@ -178,9 +178,9 @@ cd apps/viewer && bun dev
 
 ## Environment Variables
 
-Copy the example files and fill in:
+Copy the example file and fill in:
 ```bash
-cp .env.dev.example .env.dev
+cp .env.example .env
 ```
 
 | Variable                  | Required | Description                                      |
