@@ -1,8 +1,9 @@
-# Production stack for crm-bot on Node C (DigitalOcean load-test env, 10.104.0.3).
+# Production stack for crm-bot on Node C (10.104.0.3).
 # Run with:  docker compose -f docker-compose.prod.yml --env-file .env.prod <cmd>
 #
-# Self-contained: own Postgres + Redis + MinIO. App ports published on the VPC IP
-# (10.104.0.3) so Node A (crm-api) reaches the viewer; public access goes via nginx 443.
+# Own Postgres + MinIO; Redis is shared with Node B (10.104.0.5) via REDIS_URL in .env.prod,
+# not a local container — see REDIS_URL. App ports published on the VPC IP (10.104.0.3) so
+# Node A (crm-api) reaches the viewer; public access goes via nginx 443.
 # Build builder/viewer from the root Dockerfile (ARG SCOPE); workflows from its own Dockerfile.
 
 x-app-common: &app-common
@@ -26,15 +27,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-    networks:
-      - crm_bot_net
-
-  crm-bot-redis:
-    image: redis:7-alpine
-    restart: always
-    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}", "--maxmemory-policy", "noeviction"]
-    volumes:
-      - crm_bot_redis:/data
     networks:
       - crm_bot_net
 
@@ -107,5 +99,4 @@ networks:
 
 volumes:
   crm_bot_pg:
-  crm_bot_redis:
   crm_bot_minio:
