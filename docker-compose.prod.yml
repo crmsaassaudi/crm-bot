@@ -1,9 +1,10 @@
 # Production stack for crm-bot on Node C (10.104.0.3).
 # Run with:  docker compose -f docker-compose.prod.yml --env-file .env.prod <cmd>
 #
-# Own Postgres + MinIO; Redis is shared with Node B (10.104.0.5) via REDIS_URL in .env.prod,
-# not a local container — see REDIS_URL. App ports published on the VPC IP (10.104.0.3) so
-# Node A (crm-api) reaches the viewer; public access goes via nginx 443.
+# Own Postgres. Redis is shared with Node B (10.104.0.5) via REDIS_URL in .env.prod, and
+# file storage is DigitalOcean Spaces (S3_* in .env.prod) — neither runs as a local container.
+# App ports published on the VPC IP (10.104.0.3) so Node A (crm-api) reaches the viewer;
+# public access goes via nginx 443.
 # Build builder/viewer from the root Dockerfile (ARG SCOPE); workflows from its own Dockerfile.
 
 x-app-common: &app-common
@@ -29,34 +30,6 @@ services:
       retries: 10
     networks:
       - crm_bot_net
-
-  crm-bot-minio:
-    image: minio/minio
-    restart: always
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: ${S3_ACCESS_KEY}
-      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY}
-    volumes:
-      - crm_bot_minio:/data
-    networks:
-      - crm_bot_net
-
-  # One-shot: create the bucket and make the /public prefix public (mirror docker-compose.dev.yml)
-  crm-bot-createbuckets:
-    image: minio/mc
-    depends_on:
-      - crm-bot-minio
-    networks:
-      - crm_bot_net
-    entrypoint: >
-      /bin/sh -c "
-      sleep 10;
-      /usr/bin/mc alias set minio http://crm-bot-minio:9000 ${S3_ACCESS_KEY} ${S3_SECRET_KEY};
-      /usr/bin/mc mb --ignore-existing minio/${S3_BUCKET};
-      /usr/bin/mc anonymous set public minio/${S3_BUCKET}/public;
-      exit 0;
-      "
 
   crm-bot-builder:
     <<: *app-common
@@ -99,4 +72,3 @@ networks:
 
 volumes:
   crm_bot_pg:
-  crm_bot_minio:

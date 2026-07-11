@@ -79,9 +79,10 @@ jobs:
 
             COMPOSE="docker compose -f docker-compose.prod.yml --env-file .env.prod"
 
-            # Datastores: ensure up (no rebuild). createbuckets is idempotent.
-            # Redis is shared with Node B (10.104.0.5) via REDIS_URL in .env.prod — no local container.
-            $COMPOSE up -d --remove-orphans crm-bot-db crm-bot-minio crm-bot-createbuckets
+            # Datastores: ensure up (no rebuild).
+            # Redis is shared with Node B (10.104.0.5) via REDIS_URL, and file storage is
+            # DigitalOcean Spaces via S3_* — neither has a local container anymore.
+            $COMPOSE up -d --remove-orphans crm-bot-db
 
             # ── Build app images SEQUENTIALLY to cap RAM peak on Node C ──────
             # builder/viewer Next.js builds are ~6GB images; parallel build risks OOM.
