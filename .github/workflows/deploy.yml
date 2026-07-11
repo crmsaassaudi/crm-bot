@@ -2,7 +2,7 @@ name: Deploy CRM Bot
 
 # Auto-deploy crm-bot (Typebot fork) to Node C of the load-test env.
 # Mirrors crm-api's deploy flow, but pushes source via rsync from the runner
-# instead of git-pull-on-VPS (Node C deploy dir is not a git repo, and .env.prod
+# instead of git-pull-on-VPS (Node C deploy dir is not a git repo, and .env.production
 # lives only on the node). Build runs ON Node C (sequential, to limit RAM peak).
 
 on:
@@ -44,7 +44,7 @@ jobs:
           ssh-keyscan -p "$VPS_SSH_PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
 
           # --delete keeps Node C in sync with the repo, but excludes protect
-          # node-only secrets (.env.prod) and build artifacts from being deleted.
+          # node-only secrets (.env.production) and build artifacts from being deleted.
           rsync -az --delete \
             -e "ssh -i ~/.ssh/deploy_key -p $VPS_SSH_PORT -o StrictHostKeyChecking=accept-new" \
             --exclude='.git' \
@@ -58,7 +58,7 @@ jobs:
             --exclude='dist' \
             --exclude='**/dist' \
             --exclude='.env' \
-            --exclude='.env.prod' \
+            --exclude='.env.production' \
             --exclude='.env.dev' \
             ./ "$VPS_USERNAME@$VPS_HOST:$DEPLOY_PATH/"
 
@@ -74,10 +74,10 @@ jobs:
             set -e
             cd "${{ secrets.DEPLOY_PATH }}"
 
-            # .env.prod must already exist on the node (chmod 600, never in repo).
-            test -f .env.prod
+            # .env.production must already exist on the node (chmod 600, never in repo).
+            test -f .env.production
 
-            COMPOSE="docker compose -f docker-compose.prod.yml --env-file .env.prod"
+            COMPOSE="docker compose -f docker-compose.yml --env-file .env.production"
 
             # Datastores: ensure up (no rebuild).
             # Redis is shared with Node B (10.104.0.5) via REDIS_URL, and file storage is

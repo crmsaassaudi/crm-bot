@@ -200,11 +200,11 @@ cp .env.dev.example .env.dev
 ## Docker
 
 ```bash
-# Development
+# Development (supporting infra only — app itself runs via `bun dev`)
 docker-compose -f docker-compose.dev.yml up -d
 
-# Production build
-docker-compose -f docker-compose.build.yml build
+# Production (built and run by CI/CD on the target VPS — see .github/workflows/deploy.yml)
+docker compose --env-file .env.production -f docker-compose.yml build
 ```
 
 ## License
