@@ -69,7 +69,8 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
           port: ${{ secrets.VPS_SSH_PORT || '22' }}
-          command_timeout: 60m
+          # Sequential builder/viewer/workflows builds over swap can exceed 60m; 29159839231 timed out mid-typecheck.
+          command_timeout: 150m
           script: |
             set -e
             cd "${{ secrets.DEPLOY_PATH }}"
